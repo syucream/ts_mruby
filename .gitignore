@@ -19,3 +19,15 @@
 *.exe
 *.out
 *.app
+
+# files related to autoconf
+configure
+Makefile
+Makefile.in
+config.*
+autom4te.cache/
+aclocal.m4
+compile
+install-sh
+missing
+stamp-h1
