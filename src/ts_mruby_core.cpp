@@ -3,12 +3,7 @@
 //
 */
 
-#include <iostream>
-#include <sstream>
-
 #include <atscppapi/HttpStatus.h>
-#include <atscppapi/Transaction.h>
-#include <atscppapi/InterceptPlugin.h>
 
 #include <mruby.h>
 #include <mruby/proc.h>
@@ -24,34 +19,20 @@
 using namespace atscppapi;
 using std::string;
 
-class RputsPlugin : public InterceptPlugin {
-private:
-  const string _message;
 
-  template <typename T>
-  string toString(T num){
-    std::stringstream ss;
-    ss << num;
-    return ss.str();
-  }
+RputsPlugin *rputs = NULL;
 
-public:
-  RputsPlugin(Transaction &transaction, const string& msg)
-    : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT), _message(msg) { }
+RputsPlugin::~RputsPlugin() { rputs = NULL; }
 
-  void consume(const string &data, InterceptPlugin::RequestDataType type) {}
-
-  void handleInputComplete(){
-    string response("HTTP/1.1 200 OK\r\n"
-                    "Content-Length: " + toString(_message.size()) + "\r\n"
-                    "\r\n");
-    InterceptPlugin::produce(response);
-    response = _message + "\r\n";
-    InterceptPlugin::produce(response);
-    InterceptPlugin::setOutputComplete();
-  }
-
-};
+void RputsPlugin::handleInputComplete(){
+  string response("HTTP/1.1 200 OK\r\n"
+                  "Content-Length: " + toString(_message.size()) + "\r\n"
+                  "\r\n");
+  InterceptPlugin::produce(response);
+  response = _message + "\r\n";
+  InterceptPlugin::produce(response);
+  InterceptPlugin::setOutputComplete();
+}
 
 static mrb_value ts_mrb_get_ts_mruby_name(mrb_state *mrb, mrb_value self)
 {   
@@ -82,8 +63,12 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self)
   }
   const string msg((char*)RSTRING_PTR(argv), RSTRING_LEN(argv));
 
-  atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-  transaction->addPlugin(new RputsPlugin(*transaction, msg));
+  if (rputs == NULL) {
+    atscppapi::Transaction* transaction = ts_mrb_get_transaction();
+    rputs = new RputsPlugin(*transaction);
+    transaction->addPlugin(rputs);
+  }
+  rputs->appendMessage(msg);
 
   return self;
 }
@@ -98,8 +83,12 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
   string msg((char*)RSTRING_PTR(argv), RSTRING_LEN(argv));
   msg += "\n";
 
-  atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-  transaction->addPlugin(new RputsPlugin(*transaction, msg));
+  if (rputs == NULL) {
+    atscppapi::Transaction* transaction = ts_mrb_get_transaction();
+    rputs = new RputsPlugin(*transaction);
+    transaction->addPlugin(rputs);
+  }
+  rputs->appendMessage(msg);
 
   return self;
 }
