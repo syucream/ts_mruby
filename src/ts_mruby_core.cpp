@@ -3,7 +3,15 @@
 //
 */
 
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <algorithm>
+
 #include <atscppapi/HttpStatus.h>
+#include <atscppapi/Transaction.h>
+#include <atscppapi/InterceptPlugin.h>
 
 #include <mruby.h>
 #include <mruby/proc.h>
@@ -18,25 +26,30 @@
 
 using namespace atscppapi;
 using std::string;
-
+using std::vector;
+using std::pair;
 
 namespace {
 
+typedef vector<pair<string, string>> Headers;
+
+template <typename T>
+string toString(T num){
+  std::stringstream ss;
+  ss << num;
+  return ss.str();
+}
+
 class RputsPlugin : public InterceptPlugin {
 private:
+  string _responseLine;
+  Headers _headers;
   string _message;
 
-  template <typename T>
-  string toString(T num){
-    std::stringstream ss;
-    ss << num;
-    return ss.str();
-  }
-
 public:
-  RputsPlugin(Transaction &transaction)
+  RputsPlugin(Transaction &transaction, string rline)
     : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT),
-      _message("") { }
+      _message(""), _responseLine(rline) { }
 
   ~RputsPlugin();
 
@@ -44,10 +57,25 @@ public:
 
   void appendMessage(const string msg) { _message += msg;  }
 
+  void appendHeader(const pair<string, string> entry) { _headers.push_back(entry); }
+
+  void appendHeaders(const Headers& h) {
+    _headers.insert(_headers.end(), h.begin(), h.end());
+  }
+
   void handleInputComplete(){
-    string response("HTTP/1.1 200 OK\r\n"
-                    "Content-Length: " + toString(_message.size()) + "\r\n"
-                    "\r\n");
+    string response(_responseLine + "\r\n");
+
+    // make response header
+    if (!_message.empty())
+      response += "Content-Length: " + toString(_message.size()) + "\r\n";
+    for_each(_headers.begin(), _headers.end(),
+             [&response](pair<string, string> entry) {
+       response += entry.first + ": " + entry.second + "\r\n";
+    });
+
+    // make response body
+    response += "\r\n";
     InterceptPlugin::produce(response);
     response = _message + "\r\n";
     InterceptPlugin::produce(response);
@@ -94,7 +122,7 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction);
+    rputs = new RputsPlugin(*transaction, "HTTP/1.1 200 OK");
     transaction->addPlugin(rputs);
   }
   rputs->appendMessage(msg);
@@ -114,10 +142,46 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction);
+    rputs = new RputsPlugin(*transaction, "HTTP/1.1 200 OK");
     transaction->addPlugin(rputs);
   }
   rputs->appendMessage(msg);
+
+  return self;
+}
+
+static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
+{
+  int argc;
+  mrb_value uri, code;
+  int rc;
+
+  argc = mrb_get_args(mrb, "o|oo", &uri, &code);
+
+  // get status code from args
+  if (argc == 2) {
+    rc = mrb_fixnum(code);
+  } else {
+    rc = HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY;
+  }
+
+  // get redirect uri from args
+  if (mrb_type(uri) != MRB_TT_STRING) {
+    uri = mrb_funcall(mrb, uri, "to_s", 0, NULL);
+  }
+
+  // save location uri
+  const string redirectUri((char*)RSTRING_PTR(uri), RSTRING_LEN(uri));
+  if (redirectUri.size() == 0) {
+    return mrb_nil_value();
+  }
+
+  if (rputs == NULL) {
+    Transaction* transaction = ts_mrb_get_transaction();
+    rputs = new RputsPlugin(*transaction, "HTTP/1.1 " + toString(rc) + " Found");
+    rputs->appendHeader(make_pair("Location", redirectUri));
+    transaction->addPlugin(rputs);
+  }
 
   return self;
 }
@@ -165,5 +229,5 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
   mrb_define_class_method(mrb, rclass, "module_name",          ts_mrb_get_ts_mruby_name,     MRB_ARGS_NONE());
   mrb_define_class_method(mrb, rclass, "module_version",         ts_mrb_get_ts_mruby_version,    MRB_ARGS_NONE());
   mrb_define_class_method(mrb, rclass, "trafficserver_version",        ts_mrb_get_trafficserver_version,      MRB_ARGS_NONE());
-  /* mrb_define_class_method(mrb, rclass, "redirect",           ts_mrb_redirect,           MRB_ARGS_ANY()); */
+  mrb_define_class_method(mrb, rclass, "redirect",           ts_mrb_redirect,           MRB_ARGS_ANY());
 }
