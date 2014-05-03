@@ -13,21 +13,22 @@
 #include "ts_mruby_request.hpp"
 
 class MRubyPlugin : public atscppapi::GlobalPlugin {
-private:
-  mrb_state *_mrb;
-  RProc *_proc;
-
 public:
-  MRubyPlugin(const std::string& code) {
+  MRubyPlugin(const std::string& fpath) : filepath(fpath) {
+    std::ifstream ifs(filepath);
+    std::string code((std::istreambuf_iterator<char>(ifs)),
+                      std::istreambuf_iterator<char>());
+
     _mrb = mrb_open();
     ts_mrb_class_init(_mrb);
     mrbc_context *context = mrbc_context_new(_mrb);
     struct mrb_parser_state* st = mrb_parse_string(_mrb, code.c_str(), context);
     _proc = mrb_generate_code(_mrb, st);
     mrb_pool_close(st->pool);
-    
+
     registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
   }
+
   ~MRubyPlugin() {
     mrb_close(_mrb);
   }
@@ -41,12 +42,15 @@ public:
 
     transaction.resume();
   }
+
+private:
+  mrb_state *_mrb;
+  RProc *_proc;
+  std::string filepath;
+
 };
 
 void TSPluginInit(int argc, const char *argv[]) {
-  std::ifstream ifs(argv[1]);
-  std::string scripts((std::istreambuf_iterator<char>(ifs)), 
-                       std::istreambuf_iterator<char>());
-
-  new MRubyPlugin(scripts);
+  if ( argc == 2)
+    new MRubyPlugin(argv[1]);
 }
