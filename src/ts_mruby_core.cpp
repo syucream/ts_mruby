@@ -20,19 +20,48 @@ using namespace atscppapi;
 using std::string;
 
 
+namespace {
+
+class RputsPlugin : public InterceptPlugin {
+private:
+  string _message;
+
+  template <typename T>
+  string toString(T num){
+    std::stringstream ss;
+    ss << num;
+    return ss.str();
+  }
+
+public:
+  RputsPlugin(Transaction &transaction)
+    : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT),
+      _message("") { }
+
+  ~RputsPlugin();
+
+  void consume(const string &data, InterceptPlugin::RequestDataType type) {}
+
+  void appendMessage(const string msg) { _message += msg;  }
+
+  void handleInputComplete(){
+    string response("HTTP/1.1 200 OK\r\n"
+                    "Content-Length: " + toString(_message.size()) + "\r\n"
+                    "\r\n");
+    InterceptPlugin::produce(response);
+    response = _message + "\r\n";
+    InterceptPlugin::produce(response);
+    InterceptPlugin::setOutputComplete();
+  }
+
+};
+
 RputsPlugin *rputs = NULL;
 
 RputsPlugin::~RputsPlugin() { rputs = NULL; }
 
-void RputsPlugin::handleInputComplete(){
-  string response("HTTP/1.1 200 OK\r\n"
-                  "Content-Length: " + toString(_message.size()) + "\r\n"
-                  "\r\n");
-  InterceptPlugin::produce(response);
-  response = _message + "\r\n";
-  InterceptPlugin::produce(response);
-  InterceptPlugin::setOutputComplete();
-}
+} // namespace which has no name
+
 
 static mrb_value ts_mrb_get_ts_mruby_name(mrb_state *mrb, mrb_value self)
 {   
