@@ -12,6 +12,7 @@
 #include <atscppapi/HttpStatus.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/InterceptPlugin.h>
+#include <atscppapi/Logger.h>
 
 #include <mruby.h>
 #include <mruby/proc.h>
@@ -49,7 +50,7 @@ private:
 public:
   RputsPlugin(Transaction &transaction, string rline)
     : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT),
-      _message(""), _responseLine(rline) { }
+      _responseLine(rline), _message("") { }
 
   ~RputsPlugin();
 
@@ -150,6 +151,56 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value ts_mrb_errlogger(mrb_state *mrb, mrb_value self)
+{
+  mrb_value *argv;
+  mrb_value msg;
+  mrb_int argc;
+  mrb_int log_level;
+
+  mrb_get_args(mrb, "*", &argv, &argc);
+
+  if (argc != 2) {
+    TS_ERROR(MODULE_NAME
+      , "%s ERROR %s: argument is not 2"
+      , MODULE_NAME
+      , __func__
+    );
+    return self;
+  }
+  if (mrb_type(argv[0]) != MRB_TT_FIXNUM) {
+    TS_ERROR(MODULE_NAME
+      , "%s ERROR %s: argv[0] is not integer"
+      , MODULE_NAME
+      , __func__
+    );
+    return self;
+  }
+  log_level = mrb_fixnum(argv[0]);
+  if (log_level < 0) {
+    TS_ERROR(MODULE_NAME
+      , "%s ERROR %s: log level is not positive number"
+      , MODULE_NAME
+      , __func__
+    );
+    return self;
+  }
+
+  if (mrb_type(argv[1]) != MRB_TT_STRING) {
+    msg = mrb_funcall(mrb, argv[1], "to_s", 0, NULL);
+  }
+  else {
+    msg = mrb_str_dup(mrb, argv[1]);
+  }
+
+  if (log_level == 0)
+    TS_ERROR(MODULE_NAME, "%s", mrb_str_to_cstr(mrb, msg));
+  else
+    TS_DEBUG(MODULE_NAME, "%s", mrb_str_to_cstr(mrb, msg));
+
+  return self;
+}
+
 static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
 {
   int argc;
@@ -223,9 +274,13 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
   mrb_define_const(mrb, rclass, "HTTP_GATEWAY_TIME_OUT",       mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_GATEWAY_TIMEOUT));
   mrb_define_const(mrb, rclass, "HTTP_INSUFFICIENT_STORAGE",     mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_INSUFFICIENT_STORAGE));
 
+  mrb_define_const(mrb, rclass, "LOG_ERR",             mrb_fixnum_value(0));
+  mrb_define_const(mrb, rclass, "LOG_DEBUG",             mrb_fixnum_value(1));
+
   mrb_define_class_method(mrb, rclass, "rputs",           ts_mrb_rputs,           MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "echo",            ts_mrb_echo,            MRB_ARGS_ANY());
   /* mrb_define_class_method(mrb, rclass, "return",             ts_mrb_send_header,        MRB_ARGS_ANY()); */
+  mrb_define_class_method(mrb, rclass, "errlogger",          ts_mrb_errlogger,          MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "module_name",          ts_mrb_get_ts_mruby_name,     MRB_ARGS_NONE());
   mrb_define_class_method(mrb, rclass, "module_version",         ts_mrb_get_ts_mruby_version,    MRB_ARGS_NONE());
   mrb_define_class_method(mrb, rclass, "trafficserver_version",        ts_mrb_get_trafficserver_version,      MRB_ARGS_NONE());
