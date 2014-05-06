@@ -3,7 +3,6 @@
 
 AC_PREREQ([2.69])
 AC_INIT([ts_mruby], [0.0.1], [syucream1031@gmail.com])
-AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/ts_mruby.cpp])
 AC_CONFIG_HEADERS([config.h])
 
