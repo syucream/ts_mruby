@@ -10,9 +10,16 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
 AC_PROG_CXX
 
+# mruby root
+TS_PREFIX_ROOT=/usr/local/
+AC_ARG_WITH(ts_prefix_root, AC_HELP_STRING([--with-ts-prefix-root=DIR],
+    [pathname to ts_prefix_root [[ts_prefix_root]]]),
+    [TS_PREFIX_ROOT="$with_ts_prefix_root"])
+AC_SUBST(TS_PREFIX_ROOT)
+
 # Checks for libraries.
-AC_HAVE_LIBRARY([atscppapi])
-AC_HAVE_LIBRARY([mruby])
+# AC_HAVE_LIBRARY([atscppapi])
+# AC_HAVE_LIBRARY([mruby])
 
 # Checks for header files.
 
