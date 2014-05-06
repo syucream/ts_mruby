@@ -10,12 +10,19 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
 AC_PROG_CXX
 
-# mruby root
+# ATS root
 TS_PREFIX_ROOT=/usr/local/
 AC_ARG_WITH(ts_prefix_root, AC_HELP_STRING([--with-ts-prefix-root=DIR],
     [pathname to ts_prefix_root [[ts_prefix_root]]]),
     [TS_PREFIX_ROOT="$with_ts_prefix_root"])
 AC_SUBST(TS_PREFIX_ROOT)
+
+# mruby root
+MRUBY_ROOT=`pwd`/mruby
+AC_ARG_WITH(mruby_root, AC_HELP_STRING([--with-mruby-root=DIR],
+    [pathname to mruby_root [[mruby_root]]]),
+    [MRUBY_ROOT="$with_mruby_root"])
+AC_SUBST(MRUBY_ROOT)
 
 # Checks for libraries.
 # AC_HAVE_LIBRARY([atscppapi])
