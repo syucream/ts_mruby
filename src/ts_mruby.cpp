@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <map>
 #include <string>
 
 #include <atscppapi/GlobalPlugin.h>
@@ -16,12 +17,31 @@
 using namespace std;
 using namespace atscppapi;
 
-class MRubyPlugin : public GlobalPlugin {
+class MrubyScriptsCache {
 public:
-  MRubyPlugin(const string& fpath) : filepath(fpath) {
+  void store(const string& filepath) {
     ifstream ifs(filepath);
     string code((istreambuf_iterator<char>(ifs)),
                  istreambuf_iterator<char>());
+
+    scripts_.insert(make_pair(filepath, code));
+  }
+
+  const string& load(const string& filepath) {
+    return scripts_[filepath];
+  }
+
+private:
+  map<string, string> scripts_;
+};
+
+// Global mruby scripts cache
+static MrubyScriptsCache* scriptsCache = NULL;
+
+class MRubyPlugin : public GlobalPlugin {
+public:
+  MRubyPlugin(const string& fpath) : filepath(fpath) {
+    const string& code = scriptsCache->load(fpath);
 
     _mrb = mrb_open();
     ts_mrb_class_init(_mrb);
@@ -57,6 +77,10 @@ private:
 void TSPluginInit(int argc, const char *argv[]) {
   if ( argc == 2 ) {
     RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
+
+    scriptsCache = new MrubyScriptsCache;
+    scriptsCache->store(argv[1]);
+
     new MRubyPlugin(argv[1]);
   }
 }
