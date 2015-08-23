@@ -37,13 +37,6 @@ namespace {
 
 typedef vector<pair<string, string>> Headers;
 
-template <typename T>
-string toString(T num){
-  std::stringstream ss;
-  ss << num;
-  return ss.str();
-}
-
 class RputsPlugin : public InterceptPlugin {
 private:
   int _statusCode;
@@ -76,7 +69,7 @@ public:
 
     // make response header
     if (!_message.empty()) {
-      response += "Content-Length: " + toString(_message.size()) + "\r\n";
+      response += "Content-Length: " + std::to_string(_message.size()) + "\r\n";
     }
 
     for_each(_headers.begin(), _headers.end(),
