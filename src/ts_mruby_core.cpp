@@ -254,11 +254,11 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, 302);
+    rputs = new RputsPlugin(*transaction, HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
     rputs->appendHeader(make_pair("Location", redirectUri));
     transaction->addPlugin(rputs);
   } else {
-    rputs->setStatusCode(302);
+    rputs->setStatusCode(HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
   }
 
   return self;
