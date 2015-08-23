@@ -160,6 +160,22 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value ts_mrb_send_header(mrb_state *mrb, mrb_value self)
+{
+  mrb_int statusCode;
+  mrb_get_args(mrb, "i", &statusCode);
+
+  if (rputs == NULL) {
+    atscppapi::Transaction* transaction = ts_mrb_get_transaction();
+    rputs = new RputsPlugin(*transaction, statusCode);
+    transaction->addPlugin(rputs);
+  } else {
+    rputs->setStatusCode(statusCode);
+  }
+
+  return self;
+}
+
 static mrb_value ts_mrb_errlogger(mrb_state *mrb, mrb_value self)
 {
   mrb_value *argv;
@@ -292,7 +308,8 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
 
   mrb_define_class_method(mrb, rclass, "rputs",           ts_mrb_rputs,           MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "echo",            ts_mrb_echo,            MRB_ARGS_ANY());
-  /* mrb_define_class_method(mrb, rclass, "return",             ts_mrb_send_header,        MRB_ARGS_ANY()); */
+  mrb_define_class_method(mrb, rclass, "send_header",        ts_mrb_send_header,        MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, rclass, "return",             ts_mrb_send_header,        MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "errlogger",          ts_mrb_errlogger,          MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "module_name",          ts_mrb_get_ts_mruby_name,     MRB_ARGS_NONE());
   mrb_define_class_method(mrb, rclass, "module_version",         ts_mrb_get_ts_mruby_version,    MRB_ARGS_NONE());
