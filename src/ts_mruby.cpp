@@ -13,14 +13,15 @@
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_request.hpp"
 
+using namespace std;
 using namespace atscppapi;
 
 class MRubyPlugin : public GlobalPlugin {
 public:
-  MRubyPlugin(const std::string& fpath) : filepath(fpath) {
-    std::ifstream ifs(filepath);
-    std::string code((std::istreambuf_iterator<char>(ifs)),
-                      std::istreambuf_iterator<char>());
+  MRubyPlugin(const string& fpath) : filepath(fpath) {
+    ifstream ifs(filepath);
+    string code((istreambuf_iterator<char>(ifs)),
+                 istreambuf_iterator<char>());
 
     _mrb = mrb_open();
     ts_mrb_class_init(_mrb);
@@ -49,7 +50,7 @@ public:
 private:
   mrb_state *_mrb;
   RProc *_proc;
-  std::string filepath;
+  string filepath;
 
 };
 
