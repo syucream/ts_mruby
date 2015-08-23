@@ -6,7 +6,4 @@
 #ifndef TS_MRUBY_CORE_H
 #define TS_MRUBY_CORE_H
 
-#define MODULE_NAME    "ts_mruby"
-#define MODULE_VERSION "0.0.1"
-
 #endif // TS_MRUBY_CORE_H

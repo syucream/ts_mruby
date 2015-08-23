@@ -9,6 +9,7 @@
 #include <mruby/proc.h>
 #include <mruby/compile.h>
 
+#include "ts_mruby.hpp"
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_request.hpp"
 
@@ -51,6 +52,8 @@ private:
 };
 
 void TSPluginInit(int argc, const char *argv[]) {
-  if ( argc == 2)
+  if ( argc == 2 ) {
+    atscppapi::RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
     new MRubyPlugin(argv[1]);
+  }
 }

@@ -22,6 +22,7 @@
 #include <mruby/array.h>
 #include <mruby/variable.h>
 
+#include "ts_mruby.hpp"
 #include "ts_mruby_core.hpp"
 #include "ts_mruby_request.hpp"
 
