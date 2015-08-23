@@ -12,14 +12,16 @@
 #include <mruby/string.h>
 #include <mruby/class.h>
 
-atscppapi::Transaction *ts_mruby_transaction;
+using namespace atscppapi;
 
-void ts_mrb_set_transaction(atscppapi::Transaction *t)
+Transaction *ts_mruby_transaction;
+
+void ts_mrb_set_transaction(Transaction *t)
 {
   ts_mruby_transaction = t;
 }
 
-atscppapi::Transaction *ts_mrb_get_transaction(void)
+Transaction *ts_mrb_get_transaction(void)
 {
   return ts_mruby_transaction;
 }
