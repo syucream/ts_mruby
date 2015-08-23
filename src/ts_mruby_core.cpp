@@ -26,6 +26,8 @@
 #include "ts_mruby_core.hpp"
 #include "ts_mruby_request.hpp"
 
+#include "ts_mruby_internal.hpp"
+
 using namespace atscppapi;
 using std::string;
 using std::vector;
@@ -44,18 +46,20 @@ string toString(T num){
 
 class RputsPlugin : public InterceptPlugin {
 private:
-  string _responseLine;
+  int _statusCode;
   Headers _headers;
   string _message;
 
 public:
-  RputsPlugin(Transaction &transaction, string rline)
+  RputsPlugin(Transaction &transaction, int code=200)
     : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT),
-      _responseLine(rline), _message("") { }
+      _statusCode(code), _message("") { }
 
   ~RputsPlugin();
 
   void consume(const string &data, InterceptPlugin::RequestDataType type) {}
+
+  void setStatusCode(int code) { _statusCode = code; }
 
   void appendMessage(const string msg) { _message += msg;  }
 
@@ -66,11 +70,15 @@ public:
   }
 
   void handleInputComplete(){
-    string response(_responseLine + "\r\n");
+    string response("HTTP/1.1 " + 
+                    std::to_string(_statusCode) + " " + 
+                    reason_lookup(_statusCode) + "\r\n");
 
     // make response header
-    if (!_message.empty())
+    if (!_message.empty()) {
       response += "Content-Length: " + toString(_message.size()) + "\r\n";
+    }
+
     for_each(_headers.begin(), _headers.end(),
              [&response](pair<string, string> entry) {
        response += entry.first + ": " + entry.second + "\r\n";
@@ -124,7 +132,7 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, "HTTP/1.1 200 OK");
+    rputs = new RputsPlugin(*transaction);
     transaction->addPlugin(rputs);
   }
   rputs->appendMessage(msg);
@@ -144,7 +152,7 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     atscppapi::Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, "HTTP/1.1 200 OK");
+    rputs = new RputsPlugin(*transaction);
     transaction->addPlugin(rputs);
   }
   rputs->appendMessage(msg);
@@ -230,9 +238,11 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
 
   if (rputs == NULL) {
     Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, "HTTP/1.1 " + toString(rc) + " Found");
+    rputs = new RputsPlugin(*transaction, 302);
     rputs->appendHeader(make_pair("Location", redirectUri));
     transaction->addPlugin(rputs);
+  } else {
+    rputs->setStatusCode(302);
   }
 
   return self;
@@ -242,6 +252,7 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
 {
   mrb_define_method(mrb, mrb->kernel_module, "server_name", ts_mrb_server_name, ARGS_NONE());
 
+  // HTTP status codes
   mrb_define_const(mrb, rclass, "HTTP_CONTINUE", mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_CONTINUE));
   mrb_define_const(mrb, rclass, "HTTP_SWITCHING_PROTOCOLS", mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_SWITCHING_PROTOCOL));
   mrb_define_const(mrb, rclass, "HTTP_OK",             mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_OK));
@@ -275,6 +286,7 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
   mrb_define_const(mrb, rclass, "HTTP_GATEWAY_TIME_OUT",       mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_GATEWAY_TIMEOUT));
   mrb_define_const(mrb, rclass, "HTTP_INSUFFICIENT_STORAGE",     mrb_fixnum_value(atscppapi::HttpStatus::HTTP_STATUS_INSUFFICIENT_STORAGE));
 
+  // Log level
   mrb_define_const(mrb, rclass, "LOG_ERR",             mrb_fixnum_value(0));
   mrb_define_const(mrb, rclass, "LOG_DEBUG",             mrb_fixnum_value(1));
 
