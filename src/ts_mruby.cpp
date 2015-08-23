@@ -13,7 +13,9 @@
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_request.hpp"
 
-class MRubyPlugin : public atscppapi::GlobalPlugin {
+using namespace atscppapi;
+
+class MRubyPlugin : public GlobalPlugin {
 public:
   MRubyPlugin(const std::string& fpath) : filepath(fpath) {
     std::ifstream ifs(filepath);
@@ -34,7 +36,7 @@ public:
     mrb_close(_mrb);
   }
 
-  virtual void handleReadRequestHeadersPreRemap(atscppapi::Transaction &transaction) {
+  virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
     // set variables related to this transaction.
     ts_mrb_set_transaction(&transaction);
 
@@ -53,7 +55,7 @@ private:
 
 void TSPluginInit(int argc, const char *argv[]) {
   if ( argc == 2 ) {
-    atscppapi::RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
+    RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
     new MRubyPlugin(argv[1]);
   }
 }
