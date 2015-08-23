@@ -12,6 +12,7 @@
 
 void ts_mrb_server_class_init(mrb_state *mrb, struct RClass *rcalss);
 void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass);
+void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass);
 
 void ts_mrb_class_init(mrb_state *mrb)
 {
@@ -21,5 +22,6 @@ void ts_mrb_class_init(mrb_state *mrb)
 
   ts_mrb_server_class_init(mrb, rclass);
   ts_mrb_core_class_init(mrb, rclass);
+  ts_mrb_request_class_init(mrb, rclass);
 }
 
