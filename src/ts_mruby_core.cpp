@@ -259,7 +259,7 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
 
 void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass)
 {
-  mrb_define_method(mrb, mrb->kernel_module, "server_name", ts_mrb_server_name, ARGS_NONE());
+  mrb_define_method(mrb, mrb->kernel_module, "server_name", ts_mrb_server_name, MRB_ARGS_NONE());
 
   // HTTP status codes
   mrb_define_const(mrb, rclass, "HTTP_CONTINUE", mrb_fixnum_value(HttpStatus::HTTP_STATUS_CONTINUE));
