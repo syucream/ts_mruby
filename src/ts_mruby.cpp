@@ -17,6 +17,9 @@
 using namespace std;
 using namespace atscppapi;
 
+
+namespace {
+
 class MrubyScriptsCache {
 public:
   void store(const string& filepath) {
@@ -38,40 +41,49 @@ private:
 // Global mruby scripts cache
 static MrubyScriptsCache* scriptsCache = NULL;
 
+// Thread local mruby VM
+static __thread mrb_state* tl_mrb = NULL;
+
+} // nonamespace
+
+
 class MRubyPlugin : public GlobalPlugin {
 public:
   MRubyPlugin(const string& fpath) : filepath(fpath) {
     const string& code = scriptsCache->load(fpath);
 
-    _mrb = mrb_open();
-    ts_mrb_class_init(_mrb);
-    mrbc_context *context = mrbc_context_new(_mrb);
-    struct mrb_parser_state* st = mrb_parse_string(_mrb, code.c_str(), context);
-    _proc = mrb_generate_code(_mrb, st);
+    if (!tl_mrb) {
+      tl_mrb = mrb_open();
+      ts_mrb_class_init(tl_mrb);
+    }
+
+    mrbc_context *context = mrbc_context_new(tl_mrb);
+    struct mrb_parser_state* st = mrb_parse_string(tl_mrb, code.c_str(), context);
+    _proc = mrb_generate_code(tl_mrb, st);
     mrb_pool_close(st->pool);
 
     registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
-  }
-
-  ~MRubyPlugin() {
-    mrb_close(_mrb);
   }
 
   virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
     // set variables related to this transaction.
     ts_mrb_set_transaction(&transaction);
 
+    // initialize thread local mruby VM
+    if (!tl_mrb) {
+      tl_mrb = mrb_open();
+      ts_mrb_class_init(tl_mrb);
+    }
+
     // execute mruby script when ATS pre-remap hook occurs.
-    mrb_run(_mrb, _proc, mrb_nil_value());
+    mrb_run(tl_mrb, _proc, mrb_nil_value());
 
     transaction.resume();
   }
 
 private:
-  mrb_state *_mrb;
   RProc *_proc;
   string filepath;
-
 };
 
 void TSPluginInit(int argc, const char *argv[]) {
