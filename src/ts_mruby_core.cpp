@@ -5,13 +5,10 @@
 
 #include <iostream>
 #include <sstream>
-#include <vector>
-#include <map>
 #include <algorithm>
 
 #include <atscppapi/HttpStatus.h>
 #include <atscppapi/Transaction.h>
-#include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Logger.h>
 
 #include <mruby.h>
@@ -22,77 +19,12 @@
 #include <mruby/array.h>
 #include <mruby/variable.h>
 
-#include "ts_mruby.hpp"
+#include "ts_mruby_internal.hpp"
 #include "ts_mruby_core.hpp"
 #include "ts_mruby_request.hpp"
 
-#include "ts_mruby_internal.hpp"
-
 using namespace atscppapi;
 using std::string;
-using std::vector;
-using std::pair;
-
-namespace {
-
-typedef vector<pair<string, string>> Headers;
-
-class RputsPlugin : public InterceptPlugin {
-private:
-  int _statusCode;
-  Headers _headers;
-  string _message;
-
-public:
-  RputsPlugin(Transaction &transaction, int code=200)
-    : InterceptPlugin(transaction, InterceptPlugin::TRANSACTION_INTERCEPT),
-      _statusCode(code), _message("") { }
-
-  ~RputsPlugin();
-
-  void consume(const string &data, InterceptPlugin::RequestDataType type) {}
-
-  void setStatusCode(int code) { _statusCode = code; }
-
-  void appendMessage(const string msg) { _message += msg;  }
-
-  void appendHeader(const pair<string, string> entry) { _headers.push_back(entry); }
-
-  void appendHeaders(const Headers& h) {
-    _headers.insert(_headers.end(), h.begin(), h.end());
-  }
-
-  void handleInputComplete(){
-    string response("HTTP/1.1 " + 
-                    std::to_string(_statusCode) + " " + 
-                    reason_lookup(_statusCode) + "\r\n");
-
-    // make response header
-    if (!_message.empty()) {
-      response += "Content-Length: " + std::to_string(_message.size()) + "\r\n";
-    }
-
-    for_each(_headers.begin(), _headers.end(),
-             [&response](pair<string, string> entry) {
-       response += entry.first + ": " + entry.second + "\r\n";
-    });
-
-    // make response body
-    response += "\r\n";
-    InterceptPlugin::produce(response);
-    response = _message + "\r\n";
-    InterceptPlugin::produce(response);
-    InterceptPlugin::setOutputComplete();
-  }
-
-};
-
-RputsPlugin *rputs = NULL;
-
-RputsPlugin::~RputsPlugin() { rputs = NULL; }
-
-} // namespace which has no name
-
 
 static mrb_value ts_mrb_get_ts_mruby_name(mrb_state *mrb, mrb_value self)
 {   
@@ -123,12 +55,14 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self)
   }
   const string msg((char*)RSTRING_PTR(argv), RSTRING_LEN(argv));
 
-  if (rputs == NULL) {
-    Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction);
-    transaction->addPlugin(rputs);
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->rputs == NULL) {
+    Transaction* transaction = context->transaction;
+
+    context->rputs = new RputsPlugin(*transaction);
+    transaction->addPlugin(context->rputs);
   }
-  rputs->appendMessage(msg);
+  context->rputs->appendMessage(msg);
 
   return self;
 }
@@ -143,12 +77,14 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self)
   string msg((char*)RSTRING_PTR(argv), RSTRING_LEN(argv));
   msg += "\n";
 
-  if (rputs == NULL) {
-    Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction);
-    transaction->addPlugin(rputs);
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->rputs == NULL) {
+    Transaction* transaction = context->transaction;
+
+    context->rputs = new RputsPlugin(*transaction);
+    transaction->addPlugin(context->rputs);
   }
-  rputs->appendMessage(msg);
+  context->rputs->appendMessage(msg);
 
   return self;
 }
@@ -158,12 +94,14 @@ static mrb_value ts_mrb_send_header(mrb_state *mrb, mrb_value self)
   mrb_int statusCode;
   mrb_get_args(mrb, "i", &statusCode);
 
-  if (rputs == NULL) {
-    Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, statusCode);
-    transaction->addPlugin(rputs);
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->rputs == NULL) {
+    Transaction* transaction = context->transaction;
+
+    context->rputs = new RputsPlugin(*transaction);
+    transaction->addPlugin(context->rputs);
   } else {
-    rputs->setStatusCode(statusCode);
+    context->rputs->setStatusCode(statusCode);
   }
 
   return self;
@@ -245,13 +183,15 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self)
     return mrb_nil_value();
   }
 
-  if (rputs == NULL) {
-    Transaction* transaction = ts_mrb_get_transaction();
-    rputs = new RputsPlugin(*transaction, HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
-    rputs->appendHeader(make_pair("Location", redirectUri));
-    transaction->addPlugin(rputs);
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->rputs == NULL) {
+    Transaction* transaction = context->transaction;
+
+    context->rputs = new RputsPlugin(*transaction);
+    context->rputs->appendHeader(make_pair("Location", redirectUri));
+    transaction->addPlugin(context->rputs);
   } else {
-    rputs->setStatusCode(HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
+    context->rputs->setStatusCode(HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
   }
 
   return self;

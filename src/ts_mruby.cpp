@@ -10,7 +10,7 @@
 #include <mruby/proc.h>
 #include <mruby/compile.h>
 
-#include "ts_mruby.hpp"
+#include "ts_mruby_internal.hpp"
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_request.hpp"
 
@@ -66,14 +66,17 @@ public:
   }
 
   virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
-    // set variables related to this transaction.
-    ts_mrb_set_transaction(&transaction);
-
     // initialize thread local mruby VM
     if (!tl_mrb) {
       tl_mrb = mrb_open();
       ts_mrb_class_init(tl_mrb);
     }
+
+    // set execution context
+    auto context = new TSMrubyContext();
+    context->transaction = &transaction;
+    context->rputs = NULL;
+    tl_mrb->ud = reinterpret_cast<void *>(context);
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(tl_mrb, _proc, mrb_nil_value());

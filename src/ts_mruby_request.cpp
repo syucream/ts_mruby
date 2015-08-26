@@ -4,28 +4,21 @@
 */
 
 #include "ts_mruby_request.hpp"
+#include "ts_mruby_internal.hpp"
+
+#include <atscppapi/Transaction.h>
 
 #include <mruby.h>
 #include <mruby/proc.h>
 #include <mruby/data.h>
 #include <mruby/compile.h>
+#include <mruby/hash.h>
 #include <mruby/string.h>
 #include <mruby/class.h>
+#include <mruby/variable.h>
 
 using namespace atscppapi;
 using std::string;
-
-Transaction *ts_mruby_transaction;
-
-void ts_mrb_set_transaction(Transaction *t)
-{
-  ts_mruby_transaction = t;
-}
-
-Transaction *ts_mrb_get_transaction(void)
-{
-  return ts_mruby_transaction;
-}
 
 static mrb_value ts_mrb_get_class_obj(mrb_state *mrb, mrb_value self,
                                       char *obj_id, char *class_name)
@@ -66,7 +59,10 @@ static mrb_value ts_mrb_headers_in_obj(mrb_state *mrb, mrb_value self)
 
 static mrb_value ts_mrb_get_request_headers_in(mrb_state *mrb, mrb_value self)
 {
-  Headers& headers = ts_mruby_transaction->getClientRequest().getHeaders();
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction* transaction = context->transaction;
+
+  Headers& headers = transaction->getClientRequest().getHeaders();
   return ts_mrb_get_request_header(mrb, headers);
 }
 
@@ -78,7 +74,10 @@ static mrb_value ts_mrb_set_request_headers_in(mrb_state *mrb, mrb_value self)
   string key_str(RSTRING_PTR(key), RSTRING_LEN(key));
   string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
 
-  Headers& headers = ts_mruby_transaction->getClientRequest().getHeaders();
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction* transaction = context->transaction;
+
+  Headers& headers = transaction->getClientRequest().getHeaders();
   headers.set(key_str, val_str);
 
   return self;
