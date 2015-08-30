@@ -17,9 +17,6 @@
 #define MODULE_AUTHOR  "Ryo Okubo"
 #define MODULE_EMAIL   ""
 
-std::string
-reason_lookup(unsigned status);
-
 typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
