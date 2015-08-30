@@ -5,6 +5,7 @@
 #include <string>
 
 #include <atscppapi/GlobalPlugin.h>
+#include <atscppapi/RemapPlugin.h>
 #include <atscppapi/PluginInit.h>
 
 #include <mruby.h>
@@ -143,13 +144,63 @@ private:
   string filepath_;
 };
 
+class MRubyRemapPlugin : public RemapPlugin {
+public:
+  MRubyRemapPlugin(void **instance_handle, const string& fpath) : RemapPlugin(instance_handle), filepath_(fpath) {}
+
+
+  Result
+  doRemap(const Url &map_from_url, const Url &map_to_url, Transaction &transaction, bool &redirect)
+  {
+    // get or initialize thread local mruby VM
+    ThreadLocalMRubyStates* states = getMrubyStates();
+    mrb_state* mrb = states->getMrb();
+
+    // get or compile mruby script
+    RProc* proc = states->getRProc(filepath_);
+
+    // set execution context
+    TSMrubyContext* context = new TSMrubyContext();
+    context->transaction = &transaction;
+    context->rputs = NULL;
+    mrb->ud = reinterpret_cast<void *>(context);
+
+    // execute mruby script when ATS pre-remap hook occurs.
+    mrb_run(mrb, proc, mrb_nil_value());
+
+    return RESULT_NO_REMAP;
+  }
+
+private:
+  string filepath_;
+};
+
+// As global plugin
 void TSPluginInit(int argc, const char *argv[]) {
   if ( argc == 2 ) {
     RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
 
-    scriptsCache = new MrubyScriptsCache;
+    if (!scriptsCache) {
+      scriptsCache = new MrubyScriptsCache;
+    }
     scriptsCache->store(argv[1]);
 
     new MRubyPlugin(argv[1]);
+  }
+}
+
+// As remap plugin
+TSReturnCode TSRemapNewInstance(int argc, char *argv[], void **ih, char * /* ATS_UNUSED */, int /* ATS_UNUSED */) {
+  if ( argc == 3 ) {
+    if (!scriptsCache) {
+      scriptsCache = new MrubyScriptsCache;
+    }
+    scriptsCache->store(argv[2]);
+
+    new MRubyRemapPlugin(ih, argv[2]);
+
+    return TS_SUCCESS;
+  } else {
+    return TS_ERROR;
   }
 }
