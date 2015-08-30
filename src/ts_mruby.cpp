@@ -113,14 +113,11 @@ namespace {
 
 } // anonymous namespace
 
+class MRubyPluginBase {
+protected:
+  MRubyPluginBase(const string& fpath) : filepath_(fpath) {}
 
-class MRubyPlugin : public GlobalPlugin {
-public:
-  MRubyPlugin(const string& fpath) : filepath_(fpath) {
-    registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
-  }
-
-  virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
+  void executeMrubyScript(Transaction& transaction) {
     // get or initialize thread local mruby VM
     ThreadLocalMRubyStates* states = getMrubyStates();
     mrb_state* mrb = states->getMrb();
@@ -136,43 +133,36 @@ public:
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(mrb, proc, mrb_nil_value());
-
-    transaction.resume();
   }
 
 private:
   string filepath_;
 };
 
-class MRubyRemapPlugin : public RemapPlugin {
+class MRubyPlugin : public GlobalPlugin, MRubyPluginBase {
 public:
-  MRubyRemapPlugin(void **instance_handle, const string& fpath) : RemapPlugin(instance_handle), filepath_(fpath) {}
+  MRubyPlugin(const string& fpath) : MRubyPluginBase(fpath) {
+    registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
+  }
 
+  virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
+    executeMrubyScript(transaction);
+
+    transaction.resume();
+  }
+};
+
+class MRubyRemapPlugin : public RemapPlugin, MRubyPluginBase {
+public:
+  MRubyRemapPlugin(void **instance_handle, const string& fpath) : RemapPlugin(instance_handle), MRubyPluginBase(fpath) {}
 
   Result
   doRemap(const Url &map_from_url, const Url &map_to_url, Transaction &transaction, bool &redirect)
   {
-    // get or initialize thread local mruby VM
-    ThreadLocalMRubyStates* states = getMrubyStates();
-    mrb_state* mrb = states->getMrb();
-
-    // get or compile mruby script
-    RProc* proc = states->getRProc(filepath_);
-
-    // set execution context
-    TSMrubyContext* context = new TSMrubyContext();
-    context->transaction = &transaction;
-    context->rputs = NULL;
-    mrb->ud = reinterpret_cast<void *>(context);
-
-    // execute mruby script when ATS pre-remap hook occurs.
-    mrb_run(mrb, proc, mrb_nil_value());
+    executeMrubyScript(transaction);
 
     return RESULT_NO_REMAP;
   }
-
-private:
-  string filepath_;
 };
 
 // As global plugin
