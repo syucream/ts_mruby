@@ -128,7 +128,7 @@ public:
     RProc* proc = states->getRProc(filepath_);
 
     // set execution context
-    auto context = new TSMrubyContext();
+    TSMrubyContext* context = new TSMrubyContext();
     context->transaction = &transaction;
     context->rputs = NULL;
     mrb->ud = reinterpret_cast<void *>(context);
