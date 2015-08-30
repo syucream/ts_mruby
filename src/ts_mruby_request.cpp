@@ -83,6 +83,43 @@ static mrb_value ts_mrb_set_request_headers_in(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value ts_mrb_del_request_headers_in(mrb_state *mrb, mrb_value self)
+{
+  char *mkey;
+  mrb_int mlen;
+  mrb_get_args(mrb, "s", &mkey, &mlen);
+  const string key(mkey, mlen);
+
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction* transaction = context->transaction;
+
+  Headers& headers = transaction->getClientRequest().getHeaders();
+  headers.erase(key);
+
+  return self;
+}
+
+static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb, mrb_value self)
+{
+  TSMrubyContext* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction* transaction = context->transaction;
+
+  Headers& headers = transaction->getClientRequest().getHeaders();
+  mrb_value hash = mrb_hash_new(mrb);;
+
+  const header_field_iterator end = headers.end();
+  for (header_field_iterator it = headers.begin(); it != end; it++) {
+    const string& headerName = (*it).name();
+    const string& headerValue = (*it).values();
+
+    mrb_value key = mrb_str_new(mrb, headerName.c_str(), headerName.length());
+    mrb_value value = mrb_str_new(mrb, headerValue.c_str(), headerValue.length());
+    mrb_hash_set(mrb, hash, key, value);
+  }
+
+  return hash;
+}
+
 void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass)
 {
   struct RClass *class_request;
@@ -103,4 +140,8 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass)
                     MRB_ARGS_ANY());
   mrb_define_method(mrb, class_headers_in, "[]=",
                     ts_mrb_set_request_headers_in, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_headers_in, "delete",
+                    ts_mrb_del_request_headers_in, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_headers_in, "all",
+                    ts_mrb_get_request_headers_in_hash, MRB_ARGS_ANY());
 }
