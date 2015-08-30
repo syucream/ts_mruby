@@ -12,7 +12,7 @@
 #include <atscppapi/InterceptPlugin.h>
 
 #define MODULE_NAME    "ts_mruby"
-#define MODULE_VERSION "0.0.1"
+#define MODULE_VERSION "0.1"
 
 #define MODULE_AUTHOR  "Ryo Okubo"
 #define MODULE_EMAIL   ""
