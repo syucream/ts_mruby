@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include <ts/ts.h>
 #include <atscppapi/HttpStatus.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/Logger.h>
@@ -38,7 +39,10 @@ static mrb_value ts_mrb_get_ts_mruby_version(mrb_state *mrb, mrb_value self)
 
 static mrb_value ts_mrb_get_trafficserver_version(mrb_state *mrb, mrb_value self)
 {
-  return mrb_str_new_lit(mrb, "Apache Traffic Server 5.0.0");
+  const char* version = TSTrafficServerVersionGet();
+  size_t len = strlen(version);
+
+  return mrb_str_new(mrb, version, len);
 }
 
 static mrb_value ts_mrb_server_name(mrb_state *mrb, mrb_value self)
