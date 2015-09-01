@@ -11,8 +11,7 @@
 #include <mruby.h>
 #include <mruby/compile.h>
 
-void ts_mrb_class_init(mrb_state *mrb)
-{
+void ts_mrb_class_init(mrb_state *mrb) {
   struct RClass *rclass;
 
   rclass = mrb_define_class(mrb, "ATS", mrb->object_class);
@@ -21,4 +20,3 @@ void ts_mrb_class_init(mrb_state *mrb)
   ts_mrb_core_class_init(mrb, rclass);
   ts_mrb_request_class_init(mrb, rclass);
 }
-

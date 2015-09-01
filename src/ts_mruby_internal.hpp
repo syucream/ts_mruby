@@ -11,11 +11,11 @@
 #include <atscppapi/Transaction.h>
 #include <atscppapi/InterceptPlugin.h>
 
-#define MODULE_NAME    "ts_mruby"
+#define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
 
-#define MODULE_AUTHOR  "Ryo Okubo"
-#define MODULE_EMAIL   ""
+#define MODULE_AUTHOR "Ryo Okubo"
+#define MODULE_EMAIL ""
 
 typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
 
@@ -26,11 +26,13 @@ private:
   std::string _message;
 
 public:
-  RputsPlugin(atscppapi::Transaction &transaction, int code=200)
-    : atscppapi::InterceptPlugin(transaction, atscppapi::InterceptPlugin::TRANSACTION_INTERCEPT),
-      _statusCode(code), _message("") { }
+  RputsPlugin(atscppapi::Transaction &transaction, int code = 200)
+      : atscppapi::InterceptPlugin(
+            transaction, atscppapi::InterceptPlugin::TRANSACTION_INTERCEPT),
+        _statusCode(code), _message("") {}
 
-  void consume(const std::string &data, atscppapi::InterceptPlugin::RequestDataType type) {};
+  void consume(const std::string &data,
+               atscppapi::InterceptPlugin::RequestDataType type){};
 
   void setStatusCode(int code);
 
@@ -38,15 +40,14 @@ public:
 
   void appendHeader(const std::pair<std::string, std::string> entry);
 
-  void appendHeaders(const HeaderVec& h);
+  void appendHeaders(const HeaderVec &h);
 
   void handleInputComplete();
-
 };
 
 struct TSMrubyContext {
-  atscppapi::Transaction* transaction;
-  RputsPlugin* rputs;
+  atscppapi::Transaction *transaction;
+  RputsPlugin *rputs;
 };
 
 #endif // TS_MRUBY_CORE_H
