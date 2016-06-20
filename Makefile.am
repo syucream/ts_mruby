@@ -12,18 +12,14 @@ LDFLAGS  += -L$(TS_PREFIX_ROOT)lib $(MRUBY_LDFLAGS)
 LIBS     =  -latscppapi $(MRUBY_LIBS)
 
 
-all: ts_mruby.la ts_mruby.so
-
-ts_mruby.la:
-	$(TS_PREFIX_ROOT)bin/tsxs $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(SOURCES)
+all: ts_mruby.so
 
 ts_mruby.so:
-	$(CXX) -bundle -flat_namespace -undefined suppress $(LDFLAGS) -o $(TARGET) src/*.lo $(LIBS)
+	$(TS_PREFIX_ROOT)bin/tsxs $(CPPFLAGS) $(LDFLAGS) $(LIBS) -o $(TARGET) $(SOURCES)
 
 # build mruby
 build_mruby:
-	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ruby ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
-
+	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
 
 clean:
 	rm -f src/*.lo
