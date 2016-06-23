@@ -147,15 +147,15 @@ static mrb_value ts_mrb_errlogger(mrb_state *mrb, mrb_value self) {
 static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
   int argc;
   mrb_value uri, code;
-  int rc;
+  int status_code;
 
   argc = mrb_get_args(mrb, "o|oo", &uri, &code);
 
   // get status code from args
   if (argc == 2) {
-    rc = mrb_fixnum(code);
+    status_code = mrb_fixnum(code);
   } else {
-    rc = HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY;
+    status_code = HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY;
   }
 
   // get redirect uri from args
@@ -177,7 +177,7 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
     context->rputs->appendHeader(make_pair("Location", redirectUri));
     transaction->addPlugin(context->rputs);
   } else {
-    context->rputs->setStatusCode(HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY);
+    context->rputs->setStatusCode(status_code);
   }
 
   return self;
