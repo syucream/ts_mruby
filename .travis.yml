@@ -1,0 +1,35 @@
+language: cpp
+dist: trusty
+compiler:
+  - gcc
+before_install:
+  - sudo apt-get -qq update
+install:
+  - sudo apt-get -qq install autoconf automake autotools-dev libtool pkg-config libssl-dev tcl-dev libexpat1-dev libpcre3-dev libmodule-install-perl
+before_script:
+  - echo '-------------------------------'
+  - echo 'Build and install TrafficServer'
+  - echo '-------------------------------'
+  - wget -O trafficserver-6.1.1.tar.gz https://github.com/apache/trafficserver/archive/6.1.1.tar.gz
+  - tar xf trafficserver-6.1.1.tar.gz
+  - cd trafficserver-6.1.1
+  - autoreconf -if
+  - ./configure --enable-cppapi
+  - make -j2
+  - sudo make install
+  - sudo cp lib/ink_autoconf.h /usr/local/include/ # ugly hack! related to TS-2794, TS-3427 ...
+  - cd ../
+  - echo '-------------------------------'
+  - echo 'Build mruby'
+  - echo '-------------------------------'
+  - wget -O mruby-1.2.0.zip https://github.com/mruby/mruby/archive/1.2.0.zip
+  - unzip mruby-1.2.0.zip
+  - cd mruby-1.2.0
+  - CFLAGS="-fPIC" ./minirake
+  - cd ../
+script:
+  - autoreconf -if
+  - ./configure --with-ts-prefix-root=/usr/local/ --with-mruby-root=./mruby-1.2.0/
+  - make
+test:
+  - echo 'ok'

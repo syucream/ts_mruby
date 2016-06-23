@@ -5,6 +5,8 @@
 
 #include "ts_mruby_internal.hpp"
 
+#include <algorithm>
+
 using namespace std;
 
 // These status reasons are based on proxy/hdrs/HTTP.cc on trafficserver.

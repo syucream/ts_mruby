@@ -1,6 +1,8 @@
 ts_mruby
 ========
 
+[![Build Status](https://travis-ci.org/syucream/ts_mruby.svg?branch=ci)](https://travis-ci.org/syucream/ts_mruby)
+
 Enchant Apache Traffic Server with mruby power.
 
 Requirements
