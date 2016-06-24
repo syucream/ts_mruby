@@ -55,6 +55,14 @@ static mrb_value ts_mrb_headers_in_obj(mrb_state *mrb, mrb_value self) {
                               (char *)"Headers_in");
 }
 
+static mrb_value ts_mrb_get_scheme(mrb_state *mrb, mrb_value self) {
+  const TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->transaction;
+
+  const string scheme = transaction->getClientRequest().getUrl().getScheme();
+  return mrb_str_new(mrb, scheme.c_str(), scheme.length());
+}
+
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
   const TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->transaction;
@@ -237,6 +245,8 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   // ts_mrb_read_request_body,
   //                   MRB_ARGS_NONE());
 
+  mrb_define_method(mrb, class_request, "scheme",
+                    ts_mrb_get_scheme, MRB_ARGS_NONE());
   // Unsupported yet
   // mrb_define_method(mrb, class_request, "content_type=",
   //                   ts_mrb_set_content_type, MRB_ARGS_ANY());
