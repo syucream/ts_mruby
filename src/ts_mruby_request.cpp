@@ -20,6 +20,8 @@
 using namespace atscppapi;
 using std::string;
 
+const string CONTENT_TYPE_KEY = "Content-Type";
+
 static mrb_value ts_mrb_get_class_obj(mrb_state *mrb, mrb_value self,
                                       char *obj_id, char *class_name) {
   mrb_value obj;
@@ -61,6 +63,34 @@ static mrb_value ts_mrb_get_scheme(mrb_state *mrb, mrb_value self) {
 
   const string scheme = transaction->getClientRequest().getUrl().getScheme();
   return mrb_str_new(mrb, scheme.c_str(), scheme.length());
+}
+
+static mrb_value ts_mrb_get_content_type(mrb_state *mrb, mrb_value self) {
+  const TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->transaction;
+  Headers &headers = transaction->getClientRequest().getHeaders();
+
+  const string &contype = headers[CONTENT_TYPE_KEY].values();
+  if (contype != "") {
+    return mrb_str_new(mrb, contype.c_str(), contype.length());
+  } else {
+    return mrb_nil_value();
+  }
+}
+
+static mrb_value ts_mrb_set_content_type(mrb_state *mrb, mrb_value self) {
+  char *mcontype;
+  mrb_int mlen;
+  mrb_get_args(mrb, "s", &mcontype, &mlen);
+  const string contype(mcontype, mlen);
+
+  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->transaction;
+
+  Headers &headers = transaction->getClientRequest().getHeaders();
+  headers.set(CONTENT_TYPE_KEY, contype);
+
+  return self;
 }
 
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
@@ -247,11 +277,10 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
 
   mrb_define_method(mrb, class_request, "scheme",
                     ts_mrb_get_scheme, MRB_ARGS_NONE());
-  // Unsupported yet
-  // mrb_define_method(mrb, class_request, "content_type=",
-  //                   ts_mrb_set_content_type, MRB_ARGS_ANY());
-  // mrb_define_method(mrb, class_request, "content_type",
-  //                   ts_mrb_get_content_type, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_request, "content_type",
+                    ts_mrb_get_content_type, MRB_ARGS_NONE());
+  mrb_define_method(mrb, class_request, "content_type=",
+                    ts_mrb_set_content_type, MRB_ARGS_ANY());
 
   // XXX Unsupported: ATS doesn't support API's that overwrite request line
   // mrb_define_method(mrb, class_request, "request_line",
