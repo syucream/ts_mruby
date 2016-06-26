@@ -260,9 +260,30 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
   return hash;
 }
 
+static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb, mrb_value self) {
+  mrb_value key, val;
+  mrb_get_args(mrb, "oo", &key, &val);
+
+  string key_str(RSTRING_PTR(key), RSTRING_LEN(key));
+  string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
+
+  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+
+  if (context->header_rewrite == NULL) {
+    Transaction *transaction = context->transaction;
+
+    context->header_rewrite = new HeaderRewritePlugin(*transaction);
+    transaction->addPlugin(context->header_rewrite);
+  }
+  context->header_rewrite->addRewriteRule(make_pair(key_str, val_str));
+
+  return self;
+}
+
 void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   struct RClass *class_request;
   struct RClass *class_headers_in;
+  struct RClass *class_headers_out;
 
   // Request::
   class_request =
@@ -335,18 +356,17 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_headers_in, "all",
                     ts_mrb_get_request_headers_in_hash, MRB_ARGS_ANY());
 
-  // Unsupported yet
   // Request::headers_out
-  // class_headers_out =
-  //   mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
-  //
+  class_headers_out =
+    mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
+  mrb_define_method(mrb, class_headers_out, "[]=",
+                    ts_mrb_set_request_headers_out, MRB_ARGS_ANY());
+
+  // Unsupported yet
   // mrb_define_method(mrb, class_headers_out, "[]",
-  // ts_mrb_get_request_headers_out,
-  //                   MRB_ARGS_ANY());
-  // mrb_define_method(mrb, class_headers_out, "[]=",
-  //                   ts_mrb_set_request_headers_out, MRB_ARGS_ANY());
+  //                   ts_mrb_get_request_headers_out, MRB_ARGS_ANY());
   // mrb_define_method(mrb, class_headers_out, "delete",
   //                   ts_mrb_del_request_headers_out, MRB_ARGS_ANY());
   // mrb_define_method(mrb, class_headers_out, "all",
-  //                   ts_mrb_get_request_headers_out_hash, MRB_ARGS_ANY());
+  //                   ts_mrb_get_request_headers_out_hash, MRB_ARGS_NONE());
 }

@@ -8,6 +8,7 @@
 #include <algorithm>
 
 using namespace std;
+using namespace atscppapi;
 
 // These status reasons are based on proxy/hdrs/HTTP.cc on trafficserver.
 // XXX Temporary fix. We should use this function from atscppapi.
@@ -167,3 +168,20 @@ void RputsPlugin::handleInputComplete() {
   InterceptPlugin::produce(response);
   InterceptPlugin::setOutputComplete();
 }
+
+void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> entry) {
+  _headers.push_back(entry);
+}
+
+void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
+  auto& resp = transaction.getClientResponse();
+
+  Headers& resp_headers = resp.getHeaders();
+  for_each(_headers.begin(), _headers.end(),
+           [&resp_headers](pair<string, string> entry) {
+    resp_headers[entry.first] = entry.second;
+  });
+
+  transaction.resume();
+}
+
