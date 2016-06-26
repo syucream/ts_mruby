@@ -167,3 +167,15 @@ void RputsPlugin::handleInputComplete() {
   InterceptPlugin::produce(response);
   InterceptPlugin::setOutputComplete();
 }
+
+void
+FilterPlugin::appendBody(const string& data) {
+  _bodyBuffer.append(data);
+}
+
+void
+FilterPlugin::handleInputComplete() {
+  produce(_bodyBuffer);
+  setOutputComplete();
+}
+
