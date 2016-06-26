@@ -42,7 +42,7 @@ static mrb_value ts_mrb_get_request_header(mrb_state *mrb, Headers &headers) {
   mrb_get_args(mrb, "s", &mkey, &mlen);
   const string key(mkey, mlen);
 
-  string headerField = headers[key].str();
+  string headerField = headers[key].values();
   if (headerField != "") {
     return mrb_str_new(mrb, headerField.c_str(), headerField.length());
   } else {
