@@ -48,6 +48,20 @@ public:
   void handleInputComplete();
 };
 
+class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
+private:
+  HeaderVec _headers;
+
+public:
+  HeaderRewritePlugin(atscppapi::Transaction &transaction)
+    : atscppapi::TransactionPlugin(transaction) {
+      atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
+  }
+
+  void addRewriteRule(const std::pair<std::string, std::string> entry);
+  void handleSendResponseHeaders(atscppapi::Transaction &transaction);
+};
+
 class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
   std::string _bodyBuffer;
@@ -70,6 +84,7 @@ struct TSMrubyContext {
   atscppapi::Transaction *transaction;
 
   RputsPlugin *rputs;
+  HeaderRewritePlugin *header_rewrite;
   FilterPlugin *filter;
 };
 
