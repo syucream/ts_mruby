@@ -275,10 +275,10 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   // ts_mrb_read_request_body,
   //                   MRB_ARGS_NONE());
 
-  mrb_define_method(mrb, class_request, "scheme",
-                    ts_mrb_get_scheme, MRB_ARGS_NONE());
-  mrb_define_method(mrb, class_request, "content_type",
-                    ts_mrb_get_content_type, MRB_ARGS_NONE());
+  mrb_define_method(mrb, class_request, "scheme", ts_mrb_get_scheme,
+                    MRB_ARGS_NONE());
+  mrb_define_method(mrb, class_request, "content_type", ts_mrb_get_content_type,
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "content_type=",
                     ts_mrb_set_content_type, MRB_ARGS_ANY());
 

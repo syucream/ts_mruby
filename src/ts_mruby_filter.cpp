@@ -21,9 +21,7 @@
 using namespace atscppapi;
 using std::string;
 
-
-static mrb_value ts_mrb_set_filter_body(mrb_state *mrb,
-                                        mrb_value self) {
+static mrb_value ts_mrb_set_filter_body(mrb_state *mrb, mrb_value self) {
   mrb_value argv;
   mrb_get_args(mrb, "o", &argv);
   if (mrb_type(argv) != MRB_TT_STRING) {
@@ -49,10 +47,10 @@ void ts_mrb_filter_class_init(mrb_state *mrb, struct RClass *rclass) {
   // Filter::
   class_filter =
       mrb_define_class_under(mrb, rclass, "Filter", mrb->object_class);
-  mrb_define_method(mrb, class_filter, "body=",
-                    ts_mrb_set_filter_body, MRB_ARGS_ANY());
-  mrb_define_method(mrb, class_filter, "output=",
-                    ts_mrb_set_filter_body, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_filter, "body=", ts_mrb_set_filter_body,
+                    MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_filter, "output=", ts_mrb_set_filter_body,
+                    MRB_ARGS_ANY());
 
   // Unsupported yet
   // mrb_define_method(mrb, class_filter, "body",

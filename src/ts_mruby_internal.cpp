@@ -168,14 +168,9 @@ void RputsPlugin::handleInputComplete() {
   InterceptPlugin::setOutputComplete();
 }
 
-void
-FilterPlugin::appendBody(const string& data) {
-  _bodyBuffer.append(data);
-}
+void FilterPlugin::appendBody(const string &data) { _bodyBuffer.append(data); }
 
-void
-FilterPlugin::handleInputComplete() {
+void FilterPlugin::handleInputComplete() {
   produce(_bodyBuffer);
   setOutputComplete();
 }
-

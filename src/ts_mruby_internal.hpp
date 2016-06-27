@@ -54,14 +54,15 @@ private:
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
-    : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
+      : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
     registerHook(HOOK_SEND_RESPONSE_HEADERS);
     _bodyBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
   }
 
-  void appendBody(const std::string& data);
+  void appendBody(const std::string &data);
 
-  void consume(const std::string& data) { /* drop */ }
+  void consume(const std::string &data) { /* drop */
+  }
   void handleInputComplete();
 };
 
