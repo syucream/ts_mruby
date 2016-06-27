@@ -185,3 +185,9 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
+void FilterPlugin::appendBody(const string &data) { _bodyBuffer.append(data); }
+
+void FilterPlugin::handleInputComplete() {
+  produce(_bodyBuffer);
+  setOutputComplete();
+}

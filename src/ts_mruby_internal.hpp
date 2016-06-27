@@ -8,14 +8,17 @@
 
 #include <vector>
 #include <map>
-#include <atscppapi/Transaction.h>
 #include <atscppapi/InterceptPlugin.h>
+#include <atscppapi/Transaction.h>
+#include <atscppapi/TransformationPlugin.h>
 
 #define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
 
 #define MODULE_AUTHOR "Ryo Okubo"
 #define MODULE_EMAIL ""
+
+const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
 typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
 
@@ -59,10 +62,30 @@ public:
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
 };
 
+class FilterPlugin : public atscppapi::TransformationPlugin {
+private:
+  std::string _bodyBuffer;
+
+public:
+  FilterPlugin(atscppapi::Transaction &transaction)
+      : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
+    registerHook(HOOK_SEND_RESPONSE_HEADERS);
+    _bodyBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+  }
+
+  void appendBody(const std::string &data);
+
+  void consume(const std::string &data) { /* drop */
+  }
+  void handleInputComplete();
+};
+
 struct TSMrubyContext {
   atscppapi::Transaction *transaction;
+
   RputsPlugin *rputs;
   HeaderRewritePlugin *header_rewrite;
+  FilterPlugin *filter;
 };
 
 #endif // TS_MRUBY_CORE_H
