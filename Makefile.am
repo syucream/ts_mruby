@@ -17,6 +17,9 @@ all: ts_mruby.so
 ts_mruby.so:
 	$(TS_PREFIX_ROOT)bin/tsxs $(CPPFLAGS) $(LDFLAGS) $(LIBS) -o $(TARGET) $(SOURCES)
 
+install:
+	$(TS_PREFIX_ROOT)bin/tsxs -i -o $(TARGET)
+
 # build mruby
 build_mruby:
 	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
