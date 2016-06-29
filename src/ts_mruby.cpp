@@ -25,7 +25,7 @@ class MrubyScriptsCache {
 public:
   void store(const string &filepath) {
     ifstream ifs(filepath);
-    string code((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    const string code((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
 
     scripts_.insert(make_pair(filepath, code));
   }
@@ -75,8 +75,7 @@ public:
 
       // compile
       mrbc_context *context = mrbc_context_new(state_);
-      struct mrb_parser_state *st =
-          mrb_parse_string(state_, code.c_str(), context);
+      auto *st = mrb_parse_string(state_, code.c_str(), context);
       proc = mrb_generate_code(state_, st);
       mrb_pool_close(st->pool);
 
@@ -94,7 +93,7 @@ private:
 
 // Note: Use pthread API's directly to have thread local parameters
 ThreadLocalMRubyStates *getMrubyStates() {
-  ThreadLocalMRubyStates *state =
+  auto *state =
       static_cast<ThreadLocalMRubyStates *>(pthread_getspecific(threadKey));
 
   if (!state) {

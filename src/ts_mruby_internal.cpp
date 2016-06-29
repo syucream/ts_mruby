@@ -137,9 +137,9 @@ static string http_status_reason_lookup(unsigned status) {
 
 void RputsPlugin::setStatusCode(int code) { _statusCode = code; }
 
-void RputsPlugin::appendMessage(const string msg) { _message += msg; }
+void RputsPlugin::appendMessage(const string &msg) { _message += msg; }
 
-void RputsPlugin::appendHeader(const pair<string, string> entry) {
+void RputsPlugin::appendHeader(const pair<string, string> &entry) {
   _headers.push_back(entry);
 }
 
@@ -163,20 +163,20 @@ void RputsPlugin::handleInputComplete() {
 
   // make response body
   response += "\r\n";
-  InterceptPlugin::produce(response);
+  produce(response);
   response = _message + "\r\n";
-  InterceptPlugin::produce(response);
-  InterceptPlugin::setOutputComplete();
+  produce(response);
+  setOutputComplete();
 }
 
-void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> entry) {
+void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> &entry) {
   _headers.push_back(entry);
 }
 
 void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
-  auto& resp = transaction.getClientResponse();
+  Response &resp = transaction.getClientResponse();
 
-  Headers& resp_headers = resp.getHeaders();
+  Headers &resp_headers = resp.getHeaders();
   for_each(_headers.begin(), _headers.end(),
            [&resp_headers](pair<string, string> entry) {
     resp_headers[entry.first] = entry.second;

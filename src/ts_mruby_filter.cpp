@@ -29,7 +29,7 @@ static mrb_value ts_mrb_set_filter_body(mrb_state *mrb, mrb_value self) {
   }
   const string msg((char *)RSTRING_PTR(argv), RSTRING_LEN(argv));
 
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->filter == NULL) {
     Transaction *transaction = context->transaction;
 

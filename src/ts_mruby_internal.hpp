@@ -39,9 +39,9 @@ public:
 
   void setStatusCode(int code);
 
-  void appendMessage(const std::string msg);
+  void appendMessage(const std::string &msg);
 
-  void appendHeader(const std::pair<std::string, std::string> entry);
+  void appendHeader(const std::pair<std::string, std::string> &entry);
 
   void appendHeaders(const HeaderVec &h);
 
@@ -58,7 +58,7 @@ public:
       atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
-  void addRewriteRule(const std::pair<std::string, std::string> entry);
+  void addRewriteRule(const std::pair<std::string, std::string> &entry);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
 };
 

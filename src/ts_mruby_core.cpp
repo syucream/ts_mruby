@@ -55,7 +55,7 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self) {
   }
   const string msg((char *)RSTRING_PTR(argv), RSTRING_LEN(argv));
 
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->rputs == NULL) {
     Transaction *transaction = context->transaction;
 
@@ -76,7 +76,7 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self) {
   string msg((char *)RSTRING_PTR(argv), RSTRING_LEN(argv));
   msg += "\n";
 
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->rputs == NULL) {
     Transaction *transaction = context->transaction;
 
@@ -92,7 +92,7 @@ static mrb_value ts_mrb_send_header(mrb_state *mrb, mrb_value self) {
   mrb_int statusCode;
   mrb_get_args(mrb, "i", &statusCode);
 
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->rputs == NULL) {
     Transaction *transaction = context->transaction;
 
@@ -169,7 +169,7 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
     return mrb_nil_value();
   }
 
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->rputs == NULL) {
     Transaction *transaction = context->transaction;
 

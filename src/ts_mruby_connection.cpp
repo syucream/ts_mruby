@@ -23,46 +23,46 @@ using std::string;
 
 static mrb_value ts_mrb_get_conn_var_remote_addr(mrb_state *mrb,
                                                  mrb_value self) {
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->transaction;
 
   const sockaddr *addr = transaction->getClientAddress();
-  const string remote_addr = utils::getIpString(addr);
+  const string &remote_addr = utils::getIpString(addr);
 
   return mrb_str_new(mrb, remote_addr.c_str(), remote_addr.length());
 }
 
 static mrb_value ts_mrb_get_conn_var_remote_port(mrb_state *mrb,
                                                  mrb_value self) {
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->transaction;
 
   const sockaddr *addr = transaction->getClientAddress();
   uint16_t remote_port = utils::getPort(addr);
-  const string port_str = std::to_string(remote_port);
+  const string &port_str = std::to_string(remote_port);
 
   return mrb_str_new(mrb, port_str.c_str(), port_str.length());
 }
 
 static mrb_value ts_mrb_get_conn_var_server_addr(mrb_state *mrb,
                                                  mrb_value self) {
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->transaction;
 
   const sockaddr *addr = transaction->getIncomingAddress();
-  const string server_addr = utils::getIpString(addr);
+  const string &server_addr = utils::getIpString(addr);
 
   return mrb_str_new(mrb, server_addr.c_str(), server_addr.length());
 }
 
 static mrb_value ts_mrb_get_conn_var_server_port(mrb_state *mrb,
                                                  mrb_value self) {
-  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->transaction;
 
   const sockaddr *addr = transaction->getIncomingAddress();
   uint16_t server_port = utils::getPort(addr);
-  const string port_str = std::to_string(server_port);
+  const string &port_str = std::to_string(server_port);
 
   return mrb_str_new(mrb, port_str.c_str(), port_str.length());
 }
