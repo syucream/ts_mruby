@@ -158,8 +158,8 @@ void RputsPlugin::handleInputComplete() {
 
   for_each(_headers.begin(), _headers.end(),
            [&response](pair<string, string> entry) {
-    response += entry.first + ": " + entry.second + "\r\n";
-  });
+             response += entry.first + ": " + entry.second + "\r\n";
+           });
 
   // make response body
   response += "\r\n";
@@ -169,7 +169,8 @@ void RputsPlugin::handleInputComplete() {
   setOutputComplete();
 }
 
-void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> &entry) {
+void HeaderRewritePlugin::addRewriteRule(
+    const std::pair<std::string, std::string> &entry) {
   _headers.push_back(entry);
 }
 
@@ -179,8 +180,8 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   Headers &resp_headers = resp.getHeaders();
   for_each(_headers.begin(), _headers.end(),
            [&resp_headers](pair<string, string> entry) {
-    resp_headers[entry.first] = entry.second;
-  });
+             resp_headers[entry.first] = entry.second;
+           });
 
   transaction.resume();
 }

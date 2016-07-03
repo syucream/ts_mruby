@@ -6,11 +6,11 @@
 #ifndef TS_MRUBY_H
 #define TS_MRUBY_H
 
-#include <vector>
-#include <map>
 #include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/TransformationPlugin.h>
+#include <map>
+#include <vector>
 
 #define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
@@ -54,8 +54,8 @@ private:
 
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
-    : atscppapi::TransactionPlugin(transaction) {
-      atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
+      : atscppapi::TransactionPlugin(transaction) {
+    atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
   void addRewriteRule(const std::pair<std::string, std::string> &entry);
