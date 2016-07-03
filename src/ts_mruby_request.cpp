@@ -273,7 +273,7 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb, mrb_value self) 
     context->header_rewrite = new HeaderRewritePlugin(*transaction);
     transaction->addPlugin(context->header_rewrite);
   }
-  context->header_rewrite->addRewriteRule(make_pair(key_str, val_str));
+  context->header_rewrite->addRewriteRule(make_pair(key_str, val_str), HeaderRewritePlugin::Operator::ASSIGN);
 
   return self;
 }

@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <map>
+#include <tuple>
 #include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/TransformationPlugin.h>
@@ -49,17 +50,23 @@ public:
 };
 
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
-private:
-  HeaderVec _headers;
-
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
     : atscppapi::TransactionPlugin(transaction) {
       atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
-  void addRewriteRule(const std::pair<std::string, std::string> &entry);
+  enum class Operator : int {
+    ASSIGN,
+    DELETE
+  };
+
+  void addRewriteRule(const std::pair<std::string, std::string> &entry, Operator op);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
+
+private:
+  using Modifiers = std::vector<std::tuple<std::pair<std::string, std::string>, Operator>>;
+  Modifiers modifiers_;
 };
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
