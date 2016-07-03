@@ -20,7 +20,7 @@
 
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
-typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
+using HeaderVec = std::vector<std::pair<std::string, std::string>>;
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
