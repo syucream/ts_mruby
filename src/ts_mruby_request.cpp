@@ -278,6 +278,24 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb, mrb_value self) 
   return self;
 }
 
+static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb, mrb_value self) {
+  char *mkey;
+  mrb_int mlen;
+  mrb_get_args(mrb, "s", &mkey, &mlen);
+  const string key(mkey, mlen);
+
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->header_rewrite == NULL) {
+    Transaction *transaction = context->transaction;
+
+    context->header_rewrite = new HeaderRewritePlugin(*transaction);
+    transaction->addPlugin(context->header_rewrite);
+  }
+  context->header_rewrite->addRewriteRule(make_pair(key, ""), HeaderRewritePlugin::Operator::DELETE);
+
+  return self;
+}
+
 void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   struct RClass *class_request;
   struct RClass *class_headers_in;
@@ -359,12 +377,12 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
     mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
   mrb_define_method(mrb, class_headers_out, "[]=",
                     ts_mrb_set_request_headers_out, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_headers_out, "delete",
+                    ts_mrb_del_request_headers_out, MRB_ARGS_REQ(1));
 
   // Unsupported yet
   // mrb_define_method(mrb, class_headers_out, "[]",
   //                   ts_mrb_get_request_headers_out, MRB_ARGS_ANY());
-  // mrb_define_method(mrb, class_headers_out, "delete",
-  //                   ts_mrb_del_request_headers_out, MRB_ARGS_ANY());
   // mrb_define_method(mrb, class_headers_out, "all",
   //                   ts_mrb_get_request_headers_out_hash, MRB_ARGS_NONE());
 }
