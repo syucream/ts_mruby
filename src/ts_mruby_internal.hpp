@@ -61,11 +61,11 @@ public:
     DELETE
   };
 
-  void addRewriteRule(const std::pair<std::string, std::string> &entry, Operator op);
+  void addRewriteRule(const std::string &key, const std::string &value, Operator op);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
 
 private:
-  using Modifiers = std::vector<std::tuple<std::pair<std::string, std::string>, Operator>>;
+  using Modifiers = std::vector<std::tuple<std::string, std::string, Operator>>;
   Modifiers modifiers_;
 };
 

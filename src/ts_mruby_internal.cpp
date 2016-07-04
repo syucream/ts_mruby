@@ -170,8 +170,8 @@ void RputsPlugin::handleInputComplete() {
 }
 
 void HeaderRewritePlugin::addRewriteRule(
-    const std::pair<std::string, std::string> &entry, Operator op) {
-  modifiers_.push_back(make_tuple(entry, op));
+    const std::string &key, const std::string &value, Operator op) {
+  modifiers_.push_back(make_tuple(key, value, op));
 }
 
 void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
@@ -179,15 +179,14 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
 
   Headers &resp_headers = resp.getHeaders();
   for_each(modifiers_.begin(), modifiers_.end(),
-           [&resp_headers](tuple<pair<string, string>, Operator> modifier) {
-    auto entry = get<0>(modifier);
-    switch(get<1>(modifier)) {
+           [&resp_headers](tuple<string, string, Operator> modifier) {
+    switch(get<2>(modifier)) {
       case Operator::ASSIGN: {
-        resp_headers[entry.first] = entry.second;
+        resp_headers[get<0>(modifier)] = get<1>(modifier);
         break;
       }
       case Operator::DELETE: {
-        resp_headers.erase(entry.first);
+        resp_headers.erase(get<0>(modifier));
         break;
       }
       default: {
