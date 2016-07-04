@@ -56,12 +56,10 @@ public:
     atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
-  enum class Operator : int {
-    ASSIGN,
-    DELETE
-  };
+  enum class Operator : int { ASSIGN, DELETE };
 
-  void addRewriteRule(const std::string &key, const std::string &value, Operator op);
+  void addRewriteRule(const std::string &key, const std::string &value,
+                      Operator op);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
 
 private:

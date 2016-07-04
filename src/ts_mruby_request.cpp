@@ -275,12 +275,14 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
     context->header_rewrite = new HeaderRewritePlugin(*transaction);
     transaction->addPlugin(context->header_rewrite);
   }
-  context->header_rewrite->addRewriteRule(key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+  context->header_rewrite->addRewriteRule(
+      key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
 
   return self;
 }
 
-static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb, mrb_value self) {
+static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
+                                                mrb_value self) {
   char *mkey;
   mrb_int mlen;
   mrb_get_args(mrb, "s", &mkey, &mlen);
@@ -293,7 +295,8 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb, mrb_value self) 
     context->header_rewrite = new HeaderRewritePlugin(*transaction);
     transaction->addPlugin(context->header_rewrite);
   }
-  context->header_rewrite->addRewriteRule(key, "", HeaderRewritePlugin::Operator::DELETE);
+  context->header_rewrite->addRewriteRule(
+      key, "", HeaderRewritePlugin::Operator::DELETE);
 
   return self;
 }
