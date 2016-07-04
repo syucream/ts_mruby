@@ -10,6 +10,7 @@
 #include <atscppapi/Transaction.h>
 #include <atscppapi/TransformationPlugin.h>
 #include <map>
+#include <tuple>
 #include <vector>
 
 #define MODULE_NAME "ts_mruby"
@@ -49,17 +50,21 @@ public:
 };
 
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
-private:
-  HeaderVec _headers;
-
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
       : atscppapi::TransactionPlugin(transaction) {
     atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
-  void addRewriteRule(const std::pair<std::string, std::string> &entry);
+  enum class Operator : int { ASSIGN, DELETE };
+
+  void addRewriteRule(const std::string &key, const std::string &value,
+                      Operator op);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
+
+private:
+  using Modifiers = std::vector<std::tuple<std::string, std::string, Operator>>;
+  Modifiers modifiers_;
 };
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
