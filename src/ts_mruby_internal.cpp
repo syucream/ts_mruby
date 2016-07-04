@@ -158,8 +158,8 @@ void RputsPlugin::handleInputComplete() {
 
   for_each(_headers.begin(), _headers.end(),
            [&response](pair<string, string> entry) {
-    response += entry.first + ": " + entry.second + "\r\n";
-  });
+             response += entry.first + ": " + entry.second + "\r\n";
+           });
 
   // make response body
   response += "\r\n";
@@ -169,7 +169,8 @@ void RputsPlugin::handleInputComplete() {
   setOutputComplete();
 }
 
-void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> &entry, Operator op) {
+void HeaderRewritePlugin::addRewriteRule(
+    const std::pair<std::string, std::string> &entry, Operator op) {
   modifiers_.push_back(make_tuple(entry, op));
 }
 

@@ -4,8 +4,8 @@
 */
 
 #include "ts_mruby_init.hpp"
-#include "ts_mruby_core.hpp"
 #include "ts_mruby_connection.hpp"
+#include "ts_mruby_core.hpp"
 #include "ts_mruby_filter.hpp"
 #include "ts_mruby_request.hpp"
 

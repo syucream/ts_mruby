@@ -6,12 +6,12 @@
 #ifndef TS_MRUBY_H
 #define TS_MRUBY_H
 
-#include <vector>
-#include <map>
-#include <tuple>
 #include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/TransformationPlugin.h>
+#include <map>
+#include <tuple>
+#include <vector>
 
 #define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
@@ -21,7 +21,7 @@
 
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
-typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
+using HeaderVec = std::vector<std::pair<std::string, std::string>>;
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -52,8 +52,8 @@ public:
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
-    : atscppapi::TransactionPlugin(transaction) {
-      atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
+      : atscppapi::TransactionPlugin(transaction) {
+    atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
   enum class Operator : int {
