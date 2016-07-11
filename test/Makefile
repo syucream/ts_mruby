@@ -27,7 +27,7 @@ CPPFLAGS += -I$(GTEST_DIR)/include -I$(GMOCK_DIR)/include
 LIBS = -lmruby -lm -lreadline -lncurses
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -std=c++11 -g
+CXXFLAGS += -std=c++11 -g -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
