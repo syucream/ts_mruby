@@ -29,6 +29,6 @@ before_script:
   - cd ../
 script:
   - autoreconf -if
-  - ./configure --with-ts-prefix-root=/usr/local/ --with-mruby-root=./mruby-1.2.0/
+  - ./configure --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
   - make
   - make test
