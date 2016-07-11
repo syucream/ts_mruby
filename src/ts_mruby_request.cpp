@@ -9,12 +9,12 @@
 #include <atscppapi/Transaction.h>
 
 #include <mruby.h>
-#include <mruby/proc.h>
-#include <mruby/data.h>
-#include <mruby/compile.h>
-#include <mruby/hash.h>
-#include <mruby/string.h>
 #include <mruby/class.h>
+#include <mruby/compile.h>
+#include <mruby/data.h>
+#include <mruby/hash.h>
+#include <mruby/proc.h>
+#include <mruby/string.h>
 #include <mruby/variable.h>
 
 using namespace atscppapi;
@@ -249,7 +249,8 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
     const string &headerName = (*it).name();
     const string &headerValue = (*it).values();
 
-    const mrb_value key = mrb_str_new(mrb, headerName.c_str(), headerName.length());
+    const mrb_value key =
+        mrb_str_new(mrb, headerName.c_str(), headerName.length());
     const mrb_value value =
         mrb_str_new(mrb, headerValue.c_str(), headerValue.length());
     mrb_hash_set(mrb, hash, key, value);
@@ -258,7 +259,8 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
   return hash;
 }
 
-static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb, mrb_value self) {
+static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
+                                                mrb_value self) {
   mrb_value key, val;
   mrb_get_args(mrb, "oo", &key, &val);
 
@@ -273,7 +275,28 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb, mrb_value self) 
     context->header_rewrite = new HeaderRewritePlugin(*transaction);
     transaction->addPlugin(context->header_rewrite);
   }
-  context->header_rewrite->addRewriteRule(make_pair(key_str, val_str));
+  context->header_rewrite->addRewriteRule(
+      key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+
+  return self;
+}
+
+static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
+                                                mrb_value self) {
+  char *mkey;
+  mrb_int mlen;
+  mrb_get_args(mrb, "s", &mkey, &mlen);
+  const string key(mkey, mlen);
+
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  if (context->header_rewrite == NULL) {
+    Transaction *transaction = context->transaction;
+
+    context->header_rewrite = new HeaderRewritePlugin(*transaction);
+    transaction->addPlugin(context->header_rewrite);
+  }
+  context->header_rewrite->addRewriteRule(
+      key, "", HeaderRewritePlugin::Operator::DELETE);
 
   return self;
 }
@@ -356,15 +379,15 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
 
   // Request::headers_out
   class_headers_out =
-    mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
+      mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
   mrb_define_method(mrb, class_headers_out, "[]=",
                     ts_mrb_set_request_headers_out, MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_headers_out, "delete",
+                    ts_mrb_del_request_headers_out, MRB_ARGS_REQ(1));
 
   // Unsupported yet
   // mrb_define_method(mrb, class_headers_out, "[]",
   //                   ts_mrb_get_request_headers_out, MRB_ARGS_ANY());
-  // mrb_define_method(mrb, class_headers_out, "delete",
-  //                   ts_mrb_del_request_headers_out, MRB_ARGS_ANY());
   // mrb_define_method(mrb, class_headers_out, "all",
   //                   ts_mrb_get_request_headers_out_hash, MRB_ARGS_NONE());
 }
