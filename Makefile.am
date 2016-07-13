@@ -1,5 +1,5 @@
 # test executed on test/
-export CPPFLAGS LDFLAGS LIBS MRUBY_LDFLAGS
+export CPPFLAGS LDFLAGS LIBS MRUBY_ROOT
 SUBDIRS = test
 
 .PHONY: all test clean
