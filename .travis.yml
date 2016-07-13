@@ -4,6 +4,7 @@ compiler:
   - gcc
 before_install:
   - sudo apt-get -qq update
+  - pip install --user cpp-coveralls
 install:
   - sudo apt-get -qq install autoconf automake autotools-dev libtool pkg-config libssl-dev tcl-dev libexpat1-dev libpcre3-dev libmodule-install-perl
 before_script:
@@ -29,6 +30,9 @@ before_script:
   - cd ../
 script:
   - autoreconf -if
-  - ./configure --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
+  - ./configure --enable-coverage --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
   - make
   - make test
+  - make coverage
+after_success:
+  - coveralls -r test/coverage/ --gcov-options '\-lp'
