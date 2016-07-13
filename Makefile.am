@@ -1,3 +1,9 @@
+# test executed on test/
+export CPPFLAGS LDFLAGS LIBS MRUBY_ROOT
+SUBDIRS = test
+
+.PHONY: all test clean
+
 TARGET = ts_mruby.so
 SOURCES = src/ts_mruby_*.cpp src/ts_mruby.cpp
 
@@ -24,6 +30,10 @@ install:
 build_mruby:
 	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
 
+test:
+	cd test/ && ./ts_mruby_test && cd ../
+
 clean:
+	cd test/ && make clean && cd ../
 	rm -f src/*.lo
 	rm -f $(TARGET)

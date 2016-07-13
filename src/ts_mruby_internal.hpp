@@ -3,8 +3,8 @@
 //
 */
 
-#ifndef TS_MRUBY_H
-#define TS_MRUBY_H
+#ifndef TS_MRUBY_INTERNAL_H
+#define TS_MRUBY_INTERNAL_H
 
 #include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Transaction.h>
@@ -93,4 +93,4 @@ struct TSMrubyContext {
   FilterPlugin *filter;
 };
 
-#endif // TS_MRUBY_CORE_H
+#endif // TS_MRUBY_INTERNAL_H

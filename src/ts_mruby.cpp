@@ -12,30 +12,17 @@
 #include <mruby/compile.h>
 #include <mruby/proc.h>
 
+#include "ts_mruby.hpp"
+#include "ts_mruby_internal.hpp"
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_internal.hpp"
 #include "ts_mruby_request.hpp"
+#include "utils.hpp"
 
 using namespace std;
 using namespace atscppapi;
 
 namespace {
-
-class MrubyScriptsCache {
-public:
-  void store(const string &filepath) {
-    ifstream ifs(filepath);
-    const string code((istreambuf_iterator<char>(ifs)),
-                      istreambuf_iterator<char>());
-
-    scripts_.insert(make_pair(filepath, code));
-  }
-
-  const string &load(const string &filepath) { return scripts_[filepath]; }
-
-private:
-  map<string, string> scripts_;
-};
 
 // Global mruby scripts cache
 static MrubyScriptsCache *scriptsCache = NULL;
@@ -180,7 +167,7 @@ TSReturnCode TSRemapNewInstance(int argc, char *argv[], void **ih,
                                 char * /* ATS_UNUSED */, int /* ATS_UNUSED */) {
   if (argc == 3) {
     if (!scriptsCache) {
-      scriptsCache = new MrubyScriptsCache;
+      scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
     }
     scriptsCache->store(argv[2]);
 

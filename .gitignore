@@ -31,3 +31,7 @@ compile
 install-sh
 missing
 stamp-h1
+
+# binaries for test
+test/ts_mruby_test
+test-driver
