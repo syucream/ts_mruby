@@ -6,6 +6,7 @@
 #include "../src/ts_mruby.cpp"
 
 using testing::_;
+using namespace ts_mruby::utils;
 
 // FIXME enable to link, for now ...
 void ts_mrb_class_init(mrb_state *mrb){}
@@ -13,9 +14,9 @@ void ts_mrb_class_init(mrb_state *mrb){}
 namespace {
 
 TEST(TSRemapNewInstance, ts_mruby_main) {
-  auto* cacheMock = static_cast<MrubyScriptsCacheMock*>(
-      ts_mruby::utils::mockable_ptr<MrubyScriptsCache>());
-  EXPECT_CALL(*cacheMock, store(_));
+  auto cacheMock = shared_ptr<MrubyScriptsCacheMock>(
+      static_cast<MrubyScriptsCacheMock*>(mockable_ptr<MrubyScriptsCache>()));
+  EXPECT_CALL(*cacheMock.get(), store(_));
 
   // TODO replace constants with googletest fixtures
   char *argv[] = {"", "ts_mruby.so", "filepath"};
