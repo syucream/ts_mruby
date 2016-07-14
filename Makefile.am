@@ -40,6 +40,7 @@ coverage:
 clean:
 	cd test/ && make clean && cd ../
 	rm -f **/*.gcov
+	rm -f **/*.gcda
 	rm -f **/*.gcno
 	rm -f **/*.lo
 	rm -f **/*.o
