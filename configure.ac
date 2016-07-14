@@ -24,6 +24,18 @@ AC_ARG_WITH(mruby_root, AC_HELP_STRING([--with-mruby-root=DIR],
     [MRUBY_ROOT="$with_mruby_root"])
 AC_SUBST(MRUBY_ROOT)
 
+AC_MSG_CHECKING([coverage option])
+AC_ARG_ENABLE([coverage],
+              [AS_HELP_STRING([--enable-coverage],[generate coverage files])],
+              [],
+              [enable_coverage=no]
+)
+AC_MSG_RESULT([$enable_coverage])
+
+if test "${enable_coverage}" = "yes"; then
+  CXXFLAGS="$CXXFLAGS -coverage"
+fi
+
 # Checks for libraries.
 # AC_HAVE_LIBRARY([atscppapi])
 # AC_HAVE_LIBRARY([mruby])

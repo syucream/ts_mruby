@@ -1,7 +1,7 @@
 #ifdef MOCKING
 
 #include "gmock/gmock.h"
-#include "../src/ts_mruby.hpp"
+#include "../../src/ts_mruby.hpp"
 
 class MrubyScriptsCacheMock : public MrubyScriptsCache {
 public:
