@@ -2,7 +2,7 @@
 #include "gmock/gmock.h"
 
 #define MOCKING // switch to testing mode
-#include "mocks.hpp"
+#include "libs/mocks.hpp"
 #include "../src/ts_mruby.cpp"
 
 using testing::_;
