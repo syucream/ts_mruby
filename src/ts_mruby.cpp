@@ -154,7 +154,7 @@ void TSPluginInit(int argc, const char *argv[]) {
     RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
 
     if (!scriptsCache) {
-      scriptsCache = new MrubyScriptsCache;
+      scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
     }
     scriptsCache->store(argv[1]);
 

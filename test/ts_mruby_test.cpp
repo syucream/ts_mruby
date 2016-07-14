@@ -13,6 +13,16 @@ void ts_mrb_class_init(mrb_state *mrb){}
 
 namespace {
 
+TEST(TSPluginInit, ts_mruby_main) {
+  auto cacheMock = shared_ptr<MrubyScriptsCacheMock>(
+      static_cast<MrubyScriptsCacheMock*>(mockable_ptr<MrubyScriptsCache>()));
+  EXPECT_CALL(*cacheMock.get(), store(_));
+
+  // TODO replace constants with googletest fixtures
+  const char *argv[] = {"", "ts_mruby.so", "filepath"};
+  TSPluginInit(2, argv);
+}
+
 TEST(TSRemapNewInstance, ts_mruby_main) {
   auto cacheMock = shared_ptr<MrubyScriptsCacheMock>(
       static_cast<MrubyScriptsCacheMock*>(mockable_ptr<MrubyScriptsCache>()));
