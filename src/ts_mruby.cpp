@@ -8,10 +8,6 @@
 #include <atscppapi/PluginInit.h>
 #include <atscppapi/RemapPlugin.h>
 
-#include <mruby.h>
-#include <mruby/compile.h>
-#include <mruby/proc.h>
-
 #include "ts_mruby.hpp"
 #include "ts_mruby_internal.hpp"
 #include "ts_mruby_init.hpp"
@@ -21,6 +17,7 @@
 
 using namespace std;
 using namespace atscppapi;
+
 
 namespace {
 
@@ -38,46 +35,6 @@ __attribute__((constructor)) void create_thread_keys() {
     }
   }
 }
-
-/*
- * Thread local mrb_state and RProc*'s
- */
-class ThreadLocalMRubyStates {
-public:
-  ThreadLocalMRubyStates() {
-    state_ = mrb_open();
-    ts_mrb_class_init(state_);
-  }
-
-  ~ThreadLocalMRubyStates() {
-    mrb_close(state_);
-    state_ = NULL;
-  }
-
-  mrb_state *getMrb() { return state_; }
-
-  RProc *getRProc(const string &key) {
-    RProc *proc = procCache_[key];
-    if (!proc) {
-      const string &code = scriptsCache->load(key);
-
-      // compile
-      mrbc_context *context = mrbc_context_new(state_);
-      auto *st = mrb_parse_string(state_, code.c_str(), context);
-      proc = mrb_generate_code(state_, st);
-      mrb_pool_close(st->pool);
-
-      // store to cache
-      procCache_.insert(make_pair(key, proc));
-    }
-
-    return proc;
-  }
-
-private:
-  mrb_state *state_;
-  map<string, RProc *> procCache_;
-};
 
 // Note: Use pthread API's directly to have thread local parameters
 ThreadLocalMRubyStates *getMrubyStates() {
@@ -121,6 +78,34 @@ protected:
 private:
   string filepath_;
 };
+
+ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
+  state_ = mrb_open();
+  ts_mrb_class_init(state_);
+}
+
+ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
+  mrb_close(state_);
+  state_ = NULL;
+}
+
+RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
+  RProc *proc = procCache_[key];
+  if (!proc) {
+    const std::string &code = scriptsCache->load(key);
+
+    // compile
+    mrbc_context *context = mrbc_context_new(state_);
+    auto *st = mrb_parse_string(state_, code.c_str(), context);
+    proc = mrb_generate_code(state_, st);
+    mrb_pool_close(st->pool);
+
+    // store to cache
+    procCache_.insert(make_pair(key, proc));
+  }
+
+  return proc;
+}
 
 class MRubyPlugin : public GlobalPlugin, MRubyPluginBase {
 public:

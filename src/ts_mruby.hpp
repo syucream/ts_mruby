@@ -3,6 +3,10 @@
 #include <iostream>
 #include <fstream>
 
+#include <mruby.h>
+#include <mruby/compile.h>
+#include <mruby/proc.h>
+
 #ifndef TS_MRUBY_H
 #define TS_MRUBY_H
 
@@ -31,6 +35,23 @@ public:
 
 private:
   std::map<std::string, std::string> scripts_;
+};
+
+/*
+ * Thread local mrb_state and RProc*'s
+ */
+class ThreadLocalMRubyStates {
+public:
+  ThreadLocalMRubyStates();
+  ~ThreadLocalMRubyStates();
+
+  mrb_state *getMrb() { return state_; }
+
+  RProc *getRProc(const std::string &key);
+
+private:
+  mrb_state *state_;
+  std::map<std::string, RProc *> procCache_;
 };
 
 #endif // TS_MRUBY_H
