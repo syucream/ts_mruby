@@ -13,6 +13,11 @@ void ts_mrb_class_init(mrb_state *mrb){}
 
 namespace {
 
+TEST(ThreadLocalMRubyStates, getMrb) {
+  ThreadLocalMRubyStates state;
+  EXPECT_NE(nullptr, state.getMrb());
+}
+
 TEST(TSRemapNewInstance, ts_mruby_main) {
   auto cacheMock = shared_ptr<MrubyScriptsCacheMock>(
       static_cast<MrubyScriptsCacheMock*>(mockable_ptr<MrubyScriptsCache>()));
