@@ -24,6 +24,38 @@ class has_mock : public decltype(has_mock_impl::check<T>(nullptr)) {};
 
 } // anonymous namespace
 
+/*
+ * Represent Singleton pattern
+ * (Currently only used by test code)
+ *
+ */
+template<typename T>
+class Singleton final {
+private:
+  static T* instance_;
+
+public:
+  template<typename... Args>
+  static void create(Args... args) {
+    if (!instance_) {
+      instance_ = new T(args...);
+    }
+  }
+
+  template<typename... Args>
+  static T* get_instance(Args... args) {
+    create(args...);
+    return instance_;
+  }
+
+  static void destroy() {
+    if (instance_) {
+      delete instance_;
+      instance_ = nullptr;
+    }
+  }
+};
+template<typename T> T* Singleton<T>::instance_ = nullptr;
 
 // Allocate non-mocked object
 template<typename T, typename... Args, typename std::enable_if<!has_mock<T>::value>::type*& = enabler>
