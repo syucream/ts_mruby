@@ -13,6 +13,9 @@
 #include <tuple>
 #include <vector>
 
+#include <mruby.h>
+#include <mruby/value.h>
+
 #define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
 
@@ -69,19 +72,24 @@ private:
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
-  std::string _bodyBuffer;
+  std::string _origBuffer;
+  std::string _transformedBuffer;
+  mrb_value _block;
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
       : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
     registerHook(HOOK_SEND_RESPONSE_HEADERS);
-    _bodyBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+
+    _origBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    _transformedBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    _block = mrb_nil_value();
   }
 
   void appendBody(const std::string &data);
+  void appendBlock(const mrb_value block);
 
-  void consume(const std::string &data) { /* drop */
-  }
+  void consume(const std::string &data);
   void handleInputComplete();
 };
 

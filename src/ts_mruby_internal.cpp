@@ -6,6 +6,7 @@
 #include "ts_mruby_internal.hpp"
 
 #include <algorithm>
+#include <mruby/string.h>
 
 using namespace std;
 using namespace atscppapi;
@@ -197,9 +198,19 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
-void FilterPlugin::appendBody(const string &data) { _bodyBuffer.append(data); }
+void FilterPlugin::appendBody(const string &data) { _transformedBuffer.append(data); }
+
+void FilterPlugin::appendBlock(const mrb_value block) { _block = block; }
+
+void FilterPlugin::consume(const std::string &data) { _origBuffer.append(data); }
 
 void FilterPlugin::handleInputComplete() {
-  produce(_bodyBuffer);
+  if (!mrb_nil_p(_block)) {
+    mrb_state *state = mrb_open();
+    mrb_value rv = mrb_yield(state, _block, mrb_str_new(state, _origBuffer.c_str(), _origBuffer.length()));
+    _transformedBuffer = string(mrb_string_value_cstr(state, &rv));
+  }
+
+  produce(_transformedBuffer);
   setOutputComplete();
 }
