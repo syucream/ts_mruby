@@ -32,6 +32,6 @@ script:
   - autoreconf -if
   - ./configure --enable-coverage --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
   - make
-  - make test
+  - make test 2> /dev/null
 after_success:
   - coveralls -i src/ -b test/ -E '.*\/libs\/.*' -E '.*\/include\/.*' -E '.*\/googletest\/.*' --gcov-options '\-lp'
