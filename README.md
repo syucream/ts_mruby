@@ -2,7 +2,7 @@ ts_mruby
 ========
 
 [![Build Status](https://travis-ci.org/syucream/ts_mruby.svg?branch=ci)](https://travis-ci.org/syucream/ts_mruby)
-[![Coverage Status](https://coveralls.io/repos/github/syucream/ts_mruby/badge.svg?branch=coverage)](https://coveralls.io/github/syucream/ts_mruby?branch=coverage)
+[![Coverage Status](https://coveralls.io/repos/github/syucream/ts_mruby/badge.svg?branch=master)](https://coveralls.io/github/syucream/ts_mruby?branch=master)
 
 Enchant Apache Traffic Server with mruby power.
 
