@@ -68,11 +68,9 @@ T* mockable_ptr(Args... args) {
 template<typename T, typename... Args, typename std::enable_if<has_mock<T>::value>::type*& = enabler>
 T* mockable_ptr(Args... args) {
   using T_MOCK = typename T::mock_type;
-  static T_MOCK* ptr = nullptr;
-  if (!ptr) {
-    ptr = new T_MOCK(args...);
-  }
-  return ptr;
+
+  Singleton<T_MOCK> singleton;
+  return singleton.get_instance(args...);
 }
 
 } // utils namespace
