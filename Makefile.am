@@ -1,3 +1,9 @@
+# test executed on test/
+export CPPFLAGS CXXFLAGS LDFLAGS LIBS MRUBY_ROOT
+SUBDIRS = test
+
+.PHONY: all test clean
+
 TARGET = ts_mruby.so
 SOURCES = src/ts_mruby_*.cpp src/ts_mruby.cpp
 
@@ -24,6 +30,18 @@ install:
 build_mruby:
 	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
 
+test:
+	./test/ts_mruby_test
+
+coverage:
+	mkdir -p test/coverage
+	cd test/coverage && gcov ../ts_mruby_test.cpp && find . -type f -not -name "*ts_mruby*" -or -name "*ts_mruby_test*" | xargs rm && cd ../../
+
 clean:
-	rm -f src/*.lo
+	cd test/ && make clean && cd ../
+	rm -f **/*.gcov
+	rm -f **/*.gcda
+	rm -f **/*.gcno
+	rm -f **/*.lo
+	rm -f **/*.o
 	rm -f $(TARGET)

@@ -10,12 +10,12 @@
 #include <atscppapi/utils.h>
 
 #include <mruby.h>
-#include <mruby/proc.h>
-#include <mruby/data.h>
-#include <mruby/compile.h>
-#include <mruby/hash.h>
-#include <mruby/string.h>
 #include <mruby/class.h>
+#include <mruby/compile.h>
+#include <mruby/data.h>
+#include <mruby/hash.h>
+#include <mruby/proc.h>
+#include <mruby/string.h>
 #include <mruby/variable.h>
 
 using namespace atscppapi;

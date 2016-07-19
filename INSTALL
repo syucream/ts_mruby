@@ -49,9 +49,7 @@ $ make build_mruby
 
 ```
 $ make
-
-# If you doesn't change trafficserver's prefix, the destination may be "/usr/local/libexec/trafficserver/"
-$ cp ts_mruby.so /path/to/prefix/libexec/trafficserver/
+$ make install
 ```
 
 8. Prepare mruby script

@@ -1,40 +1,25 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <pthread.h>
 #include <string>
 
 #include <atscppapi/GlobalPlugin.h>
-#include <atscppapi/RemapPlugin.h>
 #include <atscppapi/PluginInit.h>
+#include <atscppapi/RemapPlugin.h>
 
-#include <mruby.h>
-#include <mruby/proc.h>
-#include <mruby/compile.h>
-
+#include "ts_mruby.hpp"
 #include "ts_mruby_internal.hpp"
 #include "ts_mruby_init.hpp"
+#include "ts_mruby_internal.hpp"
 #include "ts_mruby_request.hpp"
+#include "utils.hpp"
 
 using namespace std;
 using namespace atscppapi;
 
+
 namespace {
-
-class MrubyScriptsCache {
-public:
-  void store(const string &filepath) {
-    ifstream ifs(filepath);
-    const string code((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
-
-    scripts_.insert(make_pair(filepath, code));
-  }
-
-  const string &load(const string &filepath) { return scripts_[filepath]; }
-
-private:
-  map<string, string> scripts_;
-};
 
 // Global mruby scripts cache
 static MrubyScriptsCache *scriptsCache = NULL;
@@ -50,46 +35,6 @@ __attribute__((constructor)) void create_thread_keys() {
     }
   }
 }
-
-/*
- * Thread local mrb_state and RProc*'s
- */
-class ThreadLocalMRubyStates {
-public:
-  ThreadLocalMRubyStates() {
-    state_ = mrb_open();
-    ts_mrb_class_init(state_);
-  }
-
-  ~ThreadLocalMRubyStates() {
-    mrb_close(state_);
-    state_ = NULL;
-  }
-
-  mrb_state *getMrb() { return state_; }
-
-  RProc *getRProc(const string &key) {
-    RProc *proc = procCache_[key];
-    if (!proc) {
-      const string &code = scriptsCache->load(key);
-
-      // compile
-      mrbc_context *context = mrbc_context_new(state_);
-      auto *st = mrb_parse_string(state_, code.c_str(), context);
-      proc = mrb_generate_code(state_, st);
-      mrb_pool_close(st->pool);
-
-      // store to cache
-      procCache_.insert(make_pair(key, proc));
-    }
-
-    return proc;
-  }
-
-private:
-  mrb_state *state_;
-  map<string, RProc *> procCache_;
-};
 
 // Note: Use pthread API's directly to have thread local parameters
 ThreadLocalMRubyStates *getMrubyStates() {
@@ -134,6 +79,34 @@ private:
   string filepath_;
 };
 
+ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
+  state_ = mrb_open();
+  ts_mrb_class_init(state_);
+}
+
+ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
+  mrb_close(state_);
+  state_ = NULL;
+}
+
+RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
+  RProc *proc = procCache_[key];
+  if (!proc) {
+    const std::string &code = scriptsCache->load(key);
+
+    // compile
+    mrbc_context *context = mrbc_context_new(state_);
+    auto *st = mrb_parse_string(state_, code.c_str(), context);
+    proc = mrb_generate_code(state_, st);
+    mrb_pool_close(st->pool);
+
+    // store to cache
+    procCache_.insert(make_pair(key, proc));
+  }
+
+  return proc;
+}
+
 class MRubyPlugin : public GlobalPlugin, MRubyPluginBase {
 public:
   MRubyPlugin(const string &fpath) : MRubyPluginBase(fpath) {
@@ -166,7 +139,7 @@ void TSPluginInit(int argc, const char *argv[]) {
     RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
 
     if (!scriptsCache) {
-      scriptsCache = new MrubyScriptsCache;
+      scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
     }
     scriptsCache->store(argv[1]);
 
@@ -179,7 +152,7 @@ TSReturnCode TSRemapNewInstance(int argc, char *argv[], void **ih,
                                 char * /* ATS_UNUSED */, int /* ATS_UNUSED */) {
   if (argc == 3) {
     if (!scriptsCache) {
-      scriptsCache = new MrubyScriptsCache;
+      scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
     }
     scriptsCache->store(argv[2]);
 

@@ -3,15 +3,15 @@
 //
 */
 
-#ifndef TS_MRUBY_H
-#define TS_MRUBY_H
-
-#include <vector>
-#include <map>
+#ifndef TS_MRUBY_INTERNAL_H
+#define TS_MRUBY_INTERNAL_H
 
 #include <atscppapi/InterceptPlugin.h>
 #include <atscppapi/Transaction.h>
 #include <atscppapi/TransformationPlugin.h>
+#include <map>
+#include <tuple>
+#include <vector>
 
 #include <mruby.h>
 #include <mruby/value.h>
@@ -24,7 +24,7 @@
 
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
-typedef std::vector<std::pair<std::string, std::string>> HeaderVec;
+using HeaderVec = std::vector<std::pair<std::string, std::string>>;
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -53,17 +53,21 @@ public:
 };
 
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
-private:
-  HeaderVec _headers;
-
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
-    : atscppapi::TransactionPlugin(transaction) {
-      atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
+      : atscppapi::TransactionPlugin(transaction) {
+    atscppapi::TransactionPlugin::registerHook(HOOK_SEND_RESPONSE_HEADERS);
   }
 
-  void addRewriteRule(const std::pair<std::string, std::string> &entry);
+  enum class Operator : int { ASSIGN, DELETE };
+
+  void addRewriteRule(const std::string &key, const std::string &value,
+                      Operator op);
   void handleSendResponseHeaders(atscppapi::Transaction &transaction);
+
+private:
+  using Modifiers = std::vector<std::tuple<std::string, std::string, Operator>>;
+  Modifiers modifiers_;
 };
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
@@ -97,4 +101,4 @@ struct TSMrubyContext {
   FilterPlugin *filter;
 };
 
-#endif // TS_MRUBY_CORE_H
+#endif // TS_MRUBY_INTERNAL_H

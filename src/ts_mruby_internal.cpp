@@ -159,8 +159,8 @@ void RputsPlugin::handleInputComplete() {
 
   for_each(_headers.begin(), _headers.end(),
            [&response](pair<string, string> entry) {
-    response += entry.first + ": " + entry.second + "\r\n";
-  });
+             response += entry.first + ": " + entry.second + "\r\n";
+           });
 
   // make response body
   response += "\r\n";
@@ -170,18 +170,30 @@ void RputsPlugin::handleInputComplete() {
   setOutputComplete();
 }
 
-void HeaderRewritePlugin::addRewriteRule(const std::pair<std::string, std::string> &entry) {
-  _headers.push_back(entry);
+void HeaderRewritePlugin::addRewriteRule(const std::string &key,
+                                         const std::string &value,
+                                         Operator op) {
+  modifiers_.push_back(make_tuple(key, value, op));
 }
 
 void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   Response &resp = transaction.getClientResponse();
 
   Headers &resp_headers = resp.getHeaders();
-  for_each(_headers.begin(), _headers.end(),
-           [&resp_headers](pair<string, string> entry) {
-    resp_headers[entry.first] = entry.second;
-  });
+  for_each(modifiers_.begin(), modifiers_.end(),
+           [&resp_headers](tuple<string, string, Operator> modifier) {
+             switch (get<2>(modifier)) {
+             case Operator::ASSIGN: {
+               resp_headers[get<0>(modifier)] = get<1>(modifier);
+               break;
+             }
+             case Operator::DELETE: {
+               resp_headers.erase(get<0>(modifier));
+               break;
+             }
+             default: { break; }
+             }
+           });
 
   transaction.resume();
 }
