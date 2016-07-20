@@ -7,6 +7,7 @@ before_install:
   - pip install --user cpp-coveralls
 install:
   - sudo apt-get -qq install autoconf automake autotools-dev libtool pkg-config libssl-dev tcl-dev libexpat1-dev libpcre3-dev libmodule-install-perl
+  - sudo apt-get -qq install ruby
 before_script:
   - echo '-------------------------------'
   - echo 'Build and install TrafficServer'
@@ -15,7 +16,7 @@ before_script:
   - tar xf trafficserver-6.1.1.tar.gz
   - cd trafficserver-6.1.1
   - autoreconf -if
-  - ./configure --enable-cppapi
+  - ./configure --enable-debug --enable-cppapi
   - make -j2
   - sudo make install
   - sudo cp lib/ink_autoconf.h /usr/local/include/ # ugly hack! related to TS-2794, TS-3427 ...
@@ -31,7 +32,22 @@ before_script:
 script:
   - autoreconf -if
   - ./configure --enable-coverage --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
+  - echo '-------------------------------'
+  - echo 'Build ts_mruby'
+  - echo '-------------------------------'
   - make
+  - sudo make install
+  - echo '-------------------------------'
+  - echo 'Run unit test'
+  - echo '-------------------------------'
   - make test 2> /dev/null
+  - echo '-------------------------------'
+  - echo 'Run functional test'
+  - echo '-------------------------------'
+  - sudo ldconfig
+  - sudo chmod 777 -R /usr/local/etc/trafficserver/
+  - sudo chmod 777 -R /usr/local/var/trafficserver/
+  - sudo chmod 777 -R /usr/local/var/log/
+  - ATS_PREFIX=/usr/local/ sh ./t.sh
 after_success:
   - coveralls -i src/ -b test/ -E '.*\/libs\/.*' -E '.*\/include\/.*' -E '.*\/googletest\/.*' --gcov-options '\-lp'

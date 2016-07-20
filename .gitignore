@@ -35,8 +35,14 @@ stamp-h1
 # binaries for test
 test/ts_mruby_test
 test-driver
+*dSYM/
 
 # gcov
 *.gcda
 *.gcno
 *.gcov
+
+# tempfiles for feature spec
+Gemfile.lock
+spec/files/scripts/
+spec/*.config
