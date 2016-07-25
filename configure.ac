@@ -33,8 +33,11 @@ AC_ARG_ENABLE([coverage],
 AC_MSG_RESULT([$enable_coverage])
 
 if test "${enable_coverage}" = "yes"; then
-  CXXFLAGS="$CXXFLAGS -coverage"
+  COVFLAGS="-coverage"
+else
+  COVFLAGS=""
 fi
+AC_SUBST(COVFLAGS)
 
 # Checks for libraries.
 # AC_HAVE_LIBRARY([atscppapi])
