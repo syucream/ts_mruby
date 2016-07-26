@@ -16,7 +16,7 @@ before_script:
   - tar xf trafficserver-6.1.1.tar.gz
   - cd trafficserver-6.1.1
   - autoreconf -if
-  - ./configure --enable-debug --enable-cppapi
+  - ./configure --enable-cppapi --disable-tests
   - make -j2
   - sudo make install
   - sudo cp lib/ink_autoconf.h /usr/local/include/ # ugly hack! related to TS-2794, TS-3427 ...
