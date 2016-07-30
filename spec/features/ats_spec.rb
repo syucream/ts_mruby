@@ -9,4 +9,13 @@ describe 'ATS class', :js => false do
       expect(page).to have_text rputs.body
     end
   end
+
+  describe 'echo' do
+    it 'responds passed message' do
+      echo = build(:echo)
+
+      visit echo.path
+      expect(page).to have_text echo.body + "\n"
+    end
+  end
 end
