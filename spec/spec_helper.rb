@@ -5,6 +5,9 @@ require 'factory_girl'
 require 'rspec'
 
 RSpec.configure do |config|
+  config.color = true
+  config.formatter = :documentation
+
   config.include Capybara::DSL
 
   config.include FactoryGirl::Syntax::Methods
