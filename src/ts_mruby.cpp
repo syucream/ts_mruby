@@ -57,7 +57,7 @@ class MRubyPluginBase {
 protected:
   MRubyPluginBase(const string &fpath) : filepath_(fpath) {}
 
-  void executeMrubyScript(Transaction &transaction) {
+  TSMrubyResult executeMrubyScript(Transaction &transaction) {
     // get or initialize thread local mruby VM
     ThreadLocalMRubyStates *states = getMrubyStates();
     mrb_state *mrb = states->getMrb();
@@ -73,6 +73,8 @@ protected:
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(mrb, proc, mrb_nil_value());
+
+    return context->result;
   }
 
 private:
@@ -127,9 +129,9 @@ public:
 
   Result doRemap(const Url &map_from_url, const Url &map_to_url,
                  Transaction &transaction, bool &redirect) {
-    executeMrubyScript(transaction);
+    TSMrubyResult result = executeMrubyScript(transaction);
 
-    return RESULT_NO_REMAP;
+    return (result.isRemapped) ? RESULT_DID_REMAP : RESULT_NO_REMAP;
   }
 };
 

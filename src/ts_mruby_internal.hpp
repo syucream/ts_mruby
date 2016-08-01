@@ -11,6 +11,7 @@
 #include <atscppapi/TransformationPlugin.h>
 #include <map>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <mruby.h>
@@ -25,6 +26,12 @@
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
 using HeaderVec = std::vector<std::pair<std::string, std::string>>;
+
+bool
+judge_tls(const std::string& scheme);
+
+std::pair<std::string, uint16_t>
+get_authority_pair(const std::string& authority, bool is_tls = false);
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -50,6 +57,22 @@ public:
   void appendHeaders(const HeaderVec &h);
 
   void handleInputComplete();
+};
+
+class RemapOverridePlugin : public atscppapi::TransactionPlugin {
+private:
+  std::string _host;
+
+public:
+  RemapOverridePlugin(atscppapi::Transaction &transaction)
+      : atscppapi::TransactionPlugin(transaction) {
+    atscppapi::TransactionPlugin::registerHook(HOOK_READ_REQUEST_HEADERS_POST_REMAP);
+  }
+
+  virtual void
+  handleReadRequestHeadersPostRemap(atscppapi::Transaction& transaction);
+
+  void setHost(const std::string& host) { _host = host; }
 };
 
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
@@ -93,12 +116,19 @@ public:
   void handleInputComplete();
 };
 
+struct TSMrubyResult {
+  bool isRemapped = false;
+};
+
 struct TSMrubyContext {
   atscppapi::Transaction *transaction;
 
   RputsPlugin *rputs;
+  RemapOverridePlugin *remap_override;
   HeaderRewritePlugin *header_rewrite;
   FilterPlugin *filter;
+
+  TSMrubyResult result;
 };
 
 #endif // TS_MRUBY_INTERNAL_H
