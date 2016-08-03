@@ -112,12 +112,15 @@ RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
 class MRubyPlugin : public GlobalPlugin, MRubyPluginBase {
 public:
   MRubyPlugin(const string &fpath) : MRubyPluginBase(fpath) {
-    registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
+    registerHook(HOOK_READ_REQUEST_HEADERS);
   }
 
-  virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
-    executeMrubyScript(transaction);
+  virtual void handleReadRequestHeaders(Transaction &transaction) {
+    TSMrubyResult result = executeMrubyScript(transaction);
 
+    if (result.isRemapped) {
+      transaction.setSkipRemapping(1);
+    }
     transaction.resume();
   }
 };
