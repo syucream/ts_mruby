@@ -9,15 +9,13 @@ else
 fi
 ETC_DIR=${ATS_PREFIX}etc/trafficserver/
 
-## prepare
-cd spec/
+## setup gems
 gem install bundler
 bundle install
-ATS_ETC_DIR=$ETC_DIR sh ./setup.sh
 
 ## execute rspec
+cd spec/
+ATS_ETC_DIR=$ETC_DIR sh ./setup.sh
 ${PREFIX}bin/traffic_server &
 bundle exec rspec features
-
-## cleanup
 cd ../
