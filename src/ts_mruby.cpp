@@ -57,7 +57,7 @@ class MRubyPluginBase {
 protected:
   MRubyPluginBase(const string &fpath) : filepath_(fpath) {}
 
-  void executeMrubyScript(Transaction &transaction) {
+  TSMrubyResult executeMrubyScript(Transaction &transaction) {
     // get or initialize thread local mruby VM
     ThreadLocalMRubyStates *states = getMrubyStates();
     mrb_state *mrb = states->getMrb();
@@ -73,6 +73,8 @@ protected:
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(mrb, proc, mrb_nil_value());
+
+    return context->result;
   }
 
 private:
@@ -110,12 +112,15 @@ RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
 class MRubyPlugin : public GlobalPlugin, MRubyPluginBase {
 public:
   MRubyPlugin(const string &fpath) : MRubyPluginBase(fpath) {
-    registerHook(HOOK_READ_REQUEST_HEADERS_PRE_REMAP);
+    registerHook(HOOK_READ_REQUEST_HEADERS);
   }
 
-  virtual void handleReadRequestHeadersPreRemap(Transaction &transaction) {
-    executeMrubyScript(transaction);
+  virtual void handleReadRequestHeaders(Transaction &transaction) {
+    TSMrubyResult result = executeMrubyScript(transaction);
 
+    if (result.isRemapped) {
+      transaction.setSkipRemapping(1);
+    }
     transaction.resume();
   }
 };
@@ -127,9 +132,9 @@ public:
 
   Result doRemap(const Url &map_from_url, const Url &map_to_url,
                  Transaction &transaction, bool &redirect) {
-    executeMrubyScript(transaction);
+    TSMrubyResult result = executeMrubyScript(transaction);
 
-    return RESULT_NO_REMAP;
+    return (result.isRemapped) ? RESULT_DID_REMAP : RESULT_NO_REMAP;
   }
 };
 

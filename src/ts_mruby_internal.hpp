@@ -11,6 +11,7 @@
 #include <atscppapi/TransformationPlugin.h>
 #include <map>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <mruby.h>
@@ -25,6 +26,12 @@
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
 using HeaderVec = std::vector<std::pair<std::string, std::string>>;
+
+bool
+judge_tls(const std::string& scheme);
+
+std::pair<std::string, uint16_t>
+get_authority_pair(const std::string& authority, bool is_tls = false);
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -93,12 +100,18 @@ public:
   void handleInputComplete();
 };
 
+struct TSMrubyResult {
+  bool isRemapped = false;
+};
+
 struct TSMrubyContext {
   atscppapi::Transaction *transaction;
 
   RputsPlugin *rputs;
   HeaderRewritePlugin *header_rewrite;
   FilterPlugin *filter;
+
+  TSMrubyResult result;
 };
 
 #endif // TS_MRUBY_INTERNAL_H
