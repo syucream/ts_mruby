@@ -59,22 +59,6 @@ public:
   void handleInputComplete();
 };
 
-class RemapOverridePlugin : public atscppapi::TransactionPlugin {
-private:
-  std::string _host;
-
-public:
-  RemapOverridePlugin(atscppapi::Transaction &transaction)
-      : atscppapi::TransactionPlugin(transaction) {
-    atscppapi::TransactionPlugin::registerHook(HOOK_READ_REQUEST_HEADERS_POST_REMAP);
-  }
-
-  virtual void
-  handleReadRequestHeadersPostRemap(atscppapi::Transaction& transaction);
-
-  void setHost(const std::string& host) { _host = host; }
-};
-
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
@@ -124,7 +108,6 @@ struct TSMrubyContext {
   atscppapi::Transaction *transaction;
 
   RputsPlugin *rputs;
-  RemapOverridePlugin *remap_override;
   HeaderRewritePlugin *header_rewrite;
   FilterPlugin *filter;
 

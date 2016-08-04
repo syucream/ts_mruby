@@ -213,11 +213,6 @@ void RputsPlugin::handleInputComplete() {
   setOutputComplete();
 }
 
-void
-RemapOverridePlugin::handleReadRequestHeadersPostRemap(Transaction& transaction) {
-  transaction.resume();
-}
-
 void HeaderRewritePlugin::addRewriteRule(const std::string &key,
                                          const std::string &value,
                                          Operator op) {
