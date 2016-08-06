@@ -11,7 +11,11 @@
 #include <atscppapi/TransformationPlugin.h>
 #include <map>
 #include <tuple>
+#include <utility>
 #include <vector>
+
+#include <mruby.h>
+#include <mruby/value.h>
 
 #define MODULE_NAME "ts_mruby"
 #define MODULE_VERSION "0.1"
@@ -22,6 +26,12 @@
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
 using HeaderVec = std::vector<std::pair<std::string, std::string>>;
+
+bool
+judge_tls(const std::string& scheme);
+
+std::pair<std::string, uint16_t>
+get_authority_pair(const std::string& authority, bool is_tls = false);
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -69,20 +79,29 @@ private:
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
-  std::string _bodyBuffer;
+  std::string _origBuffer;
+  std::string _transformedBuffer;
+  mrb_value _block;
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
       : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
     registerHook(HOOK_SEND_RESPONSE_HEADERS);
-    _bodyBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+
+    _origBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    _transformedBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    _block = mrb_nil_value();
   }
 
   void appendBody(const std::string &data);
+  void appendBlock(const mrb_value block);
 
-  void consume(const std::string &data) { /* drop */
-  }
+  void consume(const std::string &data);
   void handleInputComplete();
+};
+
+struct TSMrubyResult {
+  bool isRemapped = false;
 };
 
 struct TSMrubyContext {
@@ -91,6 +110,8 @@ struct TSMrubyContext {
   RputsPlugin *rputs;
   HeaderRewritePlugin *header_rewrite;
   FilterPlugin *filter;
+
+  TSMrubyResult result;
 };
 
 #endif // TS_MRUBY_INTERNAL_H

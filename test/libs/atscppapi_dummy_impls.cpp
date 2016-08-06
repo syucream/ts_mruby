@@ -14,6 +14,8 @@ RemapPlugin::RemapPlugin(void**) {}
 
 void Transaction::resume() {}
 
+void Transaction::setSkipRemapping(int) {}
+
 void GlobalPlugin::registerHook(Plugin::HookType) {}
 GlobalPlugin::GlobalPlugin(bool ignore_internal_transactions) {};
 GlobalPlugin::~GlobalPlugin() {}
