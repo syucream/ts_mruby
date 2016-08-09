@@ -6,6 +6,11 @@ ts_mruby
 
 Enchant Apache Traffic Server with mruby power.
 
+what's ts_mruby?
+================
+
+**ts_mruby is an Apache Traffic Server plugin that provides more flexible and extensible server configuration.** You can write the configuration by mruby, and use mrbgems modules. ... And maybe the plugin support common syntax as part of the mod_mruby and ngx_mruby.
+
 Requirements
 ============
 
@@ -20,6 +25,24 @@ Requirements
 ```
 
 * mruby
+
+Examples
+========
+
+For example, you can write an ip filtering logic by using mruby like DSL:
+
+```ruby
+whitelist = [
+  "127.0.0.1"
+]
+
+# deny if client IP is listed in whitelist
+conn = ATS::Connection.new
+unless whitelist.include?(conn.remote_ip)
+  ATS::echo "Your access is not allowed ..."
+  ATS::return ATS::HTTP_FORBIDDEN
+end
+```
 
 Acknowledgement
 ===============
