@@ -8,8 +8,6 @@
 #ifndef TS_MRUBY_CONFIG_KEYS_H
 #define TS_MRUBY_CONFIG_KEYS_H
 
-#include <ts/apidefs.h>
-
 /*
  * string representation of 'TSOverridableConfigKey' enum type
  *

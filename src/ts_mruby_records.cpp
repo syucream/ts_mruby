@@ -5,6 +5,7 @@
 
 #include "ts_mruby_records.hpp"
 #include "ts_mruby_internal.hpp"
+#include "ts_mruby_config_keys.hpp"
 
 #include <atscppapi/Transaction.h>
 #include <atscppapi/utils.h>
@@ -130,8 +131,10 @@ void ts_mrb_records_class_init(mrb_state *mrb, struct RClass *rclass) {
   class_records =
       mrb_define_class_under(mrb, rclass, "Records", mrb->object_class);
 
-  // Generate definitions of constants
-  define_configkey_const<TS_CONFIG_LAST_ENTRY>(mrb, class_records);
+  // define constants
+  for (int i = TS_CONFIG_NULL + 1; i < TS_CONFIG_LAST_ENTRY; i++) {
+    mrb_define_const(mrb, class_records, OVERRIDABLE_CONFIG_KEY[i], mrb_fixnum_value(i));
+  }
 
   // getter/setter
   mrb_define_method(mrb, class_records, "get", ts_mrb_get_records,
