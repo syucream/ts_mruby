@@ -23,8 +23,6 @@ const static char* TS_MRUBY_PLUGIN_AUTHOR = "Ryo Okubo";
 const static char* TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
-using HeaderVec = std::vector<std::pair<std::string, std::string>>;
-
 bool
 judge_tls(const std::string& scheme);
 
@@ -34,7 +32,7 @@ get_authority_pair(const std::string& authority, bool is_tls = false);
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
   int _statusCode;
-  HeaderVec _headers;
+  std::vector<std::pair<std::string, std::string>> _headers;
   std::string _message;
 
 public:
@@ -52,7 +50,7 @@ public:
 
   void appendHeader(const std::pair<std::string, std::string> &entry);
 
-  void appendHeaders(const HeaderVec &h);
+  void appendHeaders(const std::vector<std::pair<std::string, std::string>> &h);
 
   void handleInputComplete();
 };

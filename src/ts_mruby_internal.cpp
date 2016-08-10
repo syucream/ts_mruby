@@ -187,7 +187,7 @@ void RputsPlugin::appendHeader(const pair<string, string> &entry) {
   _headers.push_back(entry);
 }
 
-void RputsPlugin::appendHeaders(const HeaderVec &h) {
+void RputsPlugin::appendHeaders(const vector<pair<string, string>> &h) {
   _headers.insert(_headers.end(), h.begin(), h.end());
 }
 
