@@ -9,6 +9,7 @@
 #include "ts_mruby_filter.hpp"
 #include "ts_mruby_request.hpp"
 #include "ts_mruby_upstream.hpp"
+#include "ts_mruby_records.hpp"
 
 #include <mruby.h>
 #include <mruby/compile.h>
@@ -23,4 +24,5 @@ void ts_mrb_class_init(mrb_state *mrb) {
   ts_mrb_filter_class_init(mrb, rclass);
   ts_mrb_request_class_init(mrb, rclass);
   ts_mrb_upstream_class_init(mrb, rclass);
+  ts_mrb_records_class_init(mrb, rclass);
 }
