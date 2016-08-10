@@ -17,12 +17,10 @@
 #include <mruby.h>
 #include <mruby/value.h>
 
-#define MODULE_NAME "ts_mruby"
-#define MODULE_VERSION "0.1"
-
-#define MODULE_AUTHOR "Ryo Okubo"
-#define MODULE_EMAIL ""
-
+#define TS_MRUBY_PLUGIN_NAME "ts_mruby"
+const static char* TS_MRUBY_PLUGIN_VERSION = "0.1";
+const static char* TS_MRUBY_PLUGIN_AUTHOR = "Ryo Okubo";
+const static char* TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
 using HeaderVec = std::vector<std::pair<std::string, std::string>>;

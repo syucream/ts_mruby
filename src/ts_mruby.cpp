@@ -141,7 +141,7 @@ public:
 // As global plugin
 void TSPluginInit(int argc, const char *argv[]) {
   if (argc == 2) {
-    RegisterGlobalPlugin(MODULE_NAME, MODULE_AUTHOR, MODULE_EMAIL);
+    RegisterGlobalPlugin(TS_MRUBY_PLUGIN_NAME, TS_MRUBY_PLUGIN_AUTHOR, TS_MRUBY_PLUGIN_EMAIL);
 
     if (!scriptsCache) {
       scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();

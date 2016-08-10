@@ -28,11 +28,11 @@ using namespace atscppapi;
 using std::string;
 
 static mrb_value ts_mrb_get_ts_mruby_name(mrb_state *mrb, mrb_value self) {
-  return mrb_str_new_lit(mrb, MODULE_NAME);
+  return mrb_str_new_lit(mrb, TS_MRUBY_PLUGIN_NAME);
 }
 
 static mrb_value ts_mrb_get_ts_mruby_version(mrb_state *mrb, mrb_value self) {
-  return mrb_str_new_lit(mrb, MODULE_VERSION);
+  return mrb_str_new_cstr(mrb, TS_MRUBY_PLUGIN_VERSION);
 }
 
 static mrb_value ts_mrb_get_trafficserver_version(mrb_state *mrb,
@@ -114,19 +114,19 @@ static mrb_value ts_mrb_errlogger(mrb_state *mrb, mrb_value self) {
   mrb_get_args(mrb, "*", &argv, &argc);
 
   if (argc != 2) {
-    TS_ERROR(MODULE_NAME, "%s ERROR %s: argument is not 2", MODULE_NAME,
+    TS_ERROR(TS_MRUBY_PLUGIN_NAME, "%s ERROR %s: argument is not 2", TS_MRUBY_PLUGIN_NAME,
              __func__);
     return self;
   }
   if (mrb_type(argv[0]) != MRB_TT_FIXNUM) {
-    TS_ERROR(MODULE_NAME, "%s ERROR %s: argv[0] is not integer", MODULE_NAME,
+    TS_ERROR(TS_MRUBY_PLUGIN_NAME, "%s ERROR %s: argv[0] is not integer", TS_MRUBY_PLUGIN_NAME,
              __func__);
     return self;
   }
   log_level = mrb_fixnum(argv[0]);
   if (log_level < 0) {
-    TS_ERROR(MODULE_NAME, "%s ERROR %s: log level is not positive number",
-             MODULE_NAME, __func__);
+    TS_ERROR(TS_MRUBY_PLUGIN_NAME, "%s ERROR %s: log level is not positive number",
+             TS_MRUBY_PLUGIN_NAME, __func__);
     return self;
   }
 
@@ -137,9 +137,9 @@ static mrb_value ts_mrb_errlogger(mrb_state *mrb, mrb_value self) {
   }
 
   if (log_level == 0)
-    TS_ERROR(MODULE_NAME, "%s", mrb_str_to_cstr(mrb, msg));
+    TS_ERROR(TS_MRUBY_PLUGIN_NAME, "%s", mrb_str_to_cstr(mrb, msg));
   else
-    TS_DEBUG(MODULE_NAME, "%s", mrb_str_to_cstr(mrb, msg));
+    TS_DEBUG(TS_MRUBY_PLUGIN_NAME, "%s", mrb_str_to_cstr(mrb, msg));
 
   return self;
 }
