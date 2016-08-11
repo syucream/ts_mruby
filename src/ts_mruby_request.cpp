@@ -322,7 +322,7 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_request, "content_type", ts_mrb_get_content_type,
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "content_type=",
-                    ts_mrb_set_content_type, MRB_ARGS_ANY());
+                    ts_mrb_set_content_type, MRB_ARGS_REQ(1));
 
   // XXX Unsupported: ATS doesn't support API's that overwrite request line
   // mrb_define_method(mrb, class_request, "request_line",
@@ -333,11 +333,11 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_request, "uri", ts_mrb_get_request_uri,
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "uri=", ts_mrb_set_request_uri,
-                    MRB_ARGS_ANY());
+                    MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_request, "unparsed_uri",
                     ts_mrb_get_request_unparsed_uri, MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "unparsed_uri=",
-                    ts_mrb_set_request_unparsed_uri, MRB_ARGS_ANY());
+                    ts_mrb_set_request_unparsed_uri, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_request, "method", ts_mrb_get_request_method,
                     MRB_ARGS_NONE());
 
@@ -355,7 +355,7 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_request, "args", ts_mrb_get_request_args,
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "args=", ts_mrb_set_request_args,
-                    MRB_ARGS_ANY());
+                    MRB_ARGS_REQ(1));
 
   // Unsupported yet
   // mrb_define_method(mrb, class_request, "var", ts_mrb_get_request_var,
@@ -371,11 +371,11 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_headers_in, "[]", ts_mrb_get_request_headers_in,
                     MRB_ARGS_ANY());
   mrb_define_method(mrb, class_headers_in, "[]=", ts_mrb_set_request_headers_in,
-                    MRB_ARGS_ANY());
+                    MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_headers_in, "delete",
-                    ts_mrb_del_request_headers_in, MRB_ARGS_ANY());
+                    ts_mrb_del_request_headers_in, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_headers_in, "all",
-                    ts_mrb_get_request_headers_in_hash, MRB_ARGS_ANY());
+                    ts_mrb_get_request_headers_in_hash, MRB_ARGS_NONE());
 
   // Request::headers_out
   class_headers_out =

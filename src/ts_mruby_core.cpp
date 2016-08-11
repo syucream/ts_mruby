@@ -231,12 +231,12 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_const(mrb, rclass, "LOG_ERR", mrb_fixnum_value(0));
   mrb_define_const(mrb, rclass, "LOG_DEBUG", mrb_fixnum_value(1));
 
-  mrb_define_class_method(mrb, rclass, "rputs", ts_mrb_rputs, MRB_ARGS_ANY());
-  mrb_define_class_method(mrb, rclass, "echo", ts_mrb_echo, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, rclass, "rputs", ts_mrb_rputs, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, rclass, "echo", ts_mrb_echo, MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, rclass, "send_header", ts_mrb_send_header,
-                          MRB_ARGS_ANY());
+                          MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, rclass, "return", ts_mrb_send_header,
-                          MRB_ARGS_ANY());
+                          MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, rclass, "errlogger", ts_mrb_errlogger,
                           MRB_ARGS_ANY());
   mrb_define_class_method(mrb, rclass, "module_name", ts_mrb_get_ts_mruby_name,
