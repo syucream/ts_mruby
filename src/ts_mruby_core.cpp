@@ -24,8 +24,43 @@
 #include "ts_mruby_internal.hpp"
 #include "ts_mruby_request.hpp"
 
+using namespace std;
 using namespace atscppapi;
-using std::string;
+
+const static vector<pair<HttpStatus, string>> HTTP_STATUS = {
+  {HttpStatus::HTTP_STATUS_CONTINUE, "HTTP_CONTINUE"},
+  {HttpStatus::HTTP_STATUS_SWITCHING_PROTOCOL, "HTTP_SWITCHING_PROTOCOLS"},
+  {HttpStatus::HTTP_STATUS_OK, "HTTP_OK"},
+  {HttpStatus::HTTP_STATUS_CREATED, "HTTP_CREATED"},
+  {HttpStatus::HTTP_STATUS_ACCEPTED, "HTTP_ACCEPTED"},
+  {HttpStatus::HTTP_STATUS_NO_CONTENT, "HTTP_NO_CONTENT"},
+  {HttpStatus::HTTP_STATUS_PARTIAL_CONTENT, "HTTP_PARTIAL_CONTENT"},
+  {HttpStatus::HTTP_STATUS_MOVED_PERMANENTLY, "HTTP_MOVED_PERMANENTLY"},
+  {HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY, "HTTP_MOVED_TEMPORARILY"},
+  {HttpStatus::HTTP_STATUS_SEE_OTHER, "HTTP_SEE_OTHER"},
+  {HttpStatus::HTTP_STATUS_NOT_MODIFIED, "HTTP_NOT_MODIFIED"},
+  {HttpStatus::HTTP_STATUS_TEMPORARY_REDIRECT, "HTTP_TEMPORARY_REDIRECT"},
+  {HttpStatus::HTTP_STATUS_BAD_REQUEST, "HTTP_BAD_REQUEST"},
+  {HttpStatus::HTTP_STATUS_UNAUTHORIZED, "HTTP_UNAUTHORIZED"},
+  {HttpStatus::HTTP_STATUS_FORBIDDEN, "HTTP_FORBIDDEN"},
+  {HttpStatus::HTTP_STATUS_NOT_FOUND, "HTTP_NOT_FOUND"},
+  {HttpStatus::HTTP_STATUS_METHOD_NOT_ALLOWED, "HTTP_NOT_ALLOWED"},
+  {HttpStatus::HTTP_STATUS_REQUEST_TIMEOUT, "HTTP_REQUEST_TIME_OUT"},
+  {HttpStatus::HTTP_STATUS_CONFLICT, "HTTP_CONFLICT"},
+  {HttpStatus::HTTP_STATUS_LENGTH_REQUIRED, "HTTP_LENGTH_REQUIRED"},
+  {HttpStatus::HTTP_STATUS_PRECONDITION_FAILED, "HTTP_PRECONDITION_FAILED"},
+  {HttpStatus::HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE, "HTTP_REQUEST_ENTITY_TOO_LARGE"},
+  {HttpStatus::HTTP_STATUS_REQUEST_URI_TOO_LONG, "HTTP_REQUEST_URI_TOO_LARGE"},
+  {HttpStatus::HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE, "HTTP_UNSUPPORTED_MEDIA_TYPE"},
+  {HttpStatus::HTTP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE, "HTTP_RANGE_NOT_SATISFIABLE"},
+  {HttpStatus::HTTP_STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE, "HTTP_REQUEST_HEADER_TOO_LARGE"},
+  {HttpStatus::HTTP_STATUS_INTERNAL_SERVER_ERROR, "HTTP_INTERNAL_SERVER_ERROR"},
+  {HttpStatus::HTTP_STATUS_NOT_IMPLEMENTED, "HTTP_NOT_IMPLEMENTED"},
+  {HttpStatus::HTTP_STATUS_BAD_GATEWAY, "HTTP_BAD_GATEWAY"},
+  {HttpStatus::HTTP_STATUS_SERVICE_UNAVAILABLE, "HTTP_SERVICE_UNAVAILABLE"},
+  {HttpStatus::HTTP_STATUS_GATEWAY_TIMEOUT, "HTTP_GATEWAY_TIME_OUT"},
+  {HttpStatus::HTTP_STATUS_INSUFFICIENT_STORAGE, "HTTP_INSUFFICIENT_STORAGE"},
+};
 
 static mrb_value ts_mrb_get_ts_mruby_name(mrb_state *mrb, mrb_value self) {
   return mrb_str_new_lit(mrb, TS_MRUBY_PLUGIN_NAME);
@@ -187,85 +222,10 @@ void ts_mrb_core_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, mrb->kernel_module, "server_name", ts_mrb_server_name,
                     MRB_ARGS_NONE());
 
-  // HTTP status codes
-  mrb_define_const(mrb, rclass, "HTTP_CONTINUE",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_CONTINUE));
-  mrb_define_const(
-      mrb, rclass, "HTTP_SWITCHING_PROTOCOLS",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_SWITCHING_PROTOCOL));
-  mrb_define_const(mrb, rclass, "HTTP_OK",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_OK));
-  mrb_define_const(mrb, rclass, "HTTP_CREATED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_CREATED));
-  mrb_define_const(mrb, rclass, "HTTP_ACCEPTED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_ACCEPTED));
-  mrb_define_const(mrb, rclass, "HTTP_NO_CONTENT",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_NO_CONTENT));
-  mrb_define_const(mrb, rclass, "HTTP_PARTIAL_CONTENT",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_PARTIAL_CONTENT));
-  mrb_define_const(mrb, rclass, "HTTP_MOVED_PERMANENTLY",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_MOVED_PERMANENTLY));
-  mrb_define_const(mrb, rclass, "HTTP_MOVED_TEMPORARILY",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_MOVED_TEMPORARILY));
-  mrb_define_const(mrb, rclass, "HTTP_SEE_OTHER",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_SEE_OTHER));
-  mrb_define_const(mrb, rclass, "HTTP_NOT_MODIFIED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_NOT_MODIFIED));
-  mrb_define_const(
-      mrb, rclass, "HTTP_TEMPORARY_REDIRECT",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_TEMPORARY_REDIRECT));
-  mrb_define_const(mrb, rclass, "HTTP_BAD_REQUEST",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_BAD_REQUEST));
-  mrb_define_const(mrb, rclass, "HTTP_UNAUTHORIZED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_UNAUTHORIZED));
-  mrb_define_const(mrb, rclass, "HTTP_FORBIDDEN",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_FORBIDDEN));
-  mrb_define_const(mrb, rclass, "HTTP_NOT_FOUND",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_NOT_FOUND));
-  mrb_define_const(
-      mrb, rclass, "HTTP_NOT_ALLOWED",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_METHOD_NOT_ALLOWED));
-  mrb_define_const(mrb, rclass, "HTTP_REQUEST_TIME_OUT",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_REQUEST_TIMEOUT));
-  mrb_define_const(mrb, rclass, "HTTP_CONFLICT",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_CONFLICT));
-  mrb_define_const(mrb, rclass, "HTTP_LENGTH_REQUIRED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_LENGTH_REQUIRED));
-  mrb_define_const(
-      mrb, rclass, "HTTP_PRECONDITION_FAILED",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_PRECONDITION_FAILED));
-  mrb_define_const(
-      mrb, rclass, "HTTP_REQUEST_ENTITY_TOO_LARGE",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE));
-  mrb_define_const(
-      mrb, rclass, "HTTP_REQUEST_URI_TOO_LARGE",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_REQUEST_URI_TOO_LONG));
-  mrb_define_const(
-      mrb, rclass, "HTTP_UNSUPPORTED_MEDIA_TYPE",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE));
-  mrb_define_const(
-      mrb, rclass, "HTTP_RANGE_NOT_SATISFIABLE",
-      mrb_fixnum_value(
-          HttpStatus::HTTP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE));
-  mrb_define_const(
-      mrb, rclass, "HTTP_REQUEST_HEADER_TOO_LARGE",
-      mrb_fixnum_value(
-          HttpStatus::HTTP_STATUS_REQUEST_HEADER_FIELDS_TOO_LARGE));
-  mrb_define_const(
-      mrb, rclass, "HTTP_INTERNAL_SERVER_ERROR",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_INTERNAL_SERVER_ERROR));
-  mrb_define_const(mrb, rclass, "HTTP_NOT_IMPLEMENTED",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_NOT_IMPLEMENTED));
-  mrb_define_const(mrb, rclass, "HTTP_BAD_GATEWAY",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_BAD_GATEWAY));
-  mrb_define_const(
-      mrb, rclass, "HTTP_SERVICE_UNAVAILABLE",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_SERVICE_UNAVAILABLE));
-  mrb_define_const(mrb, rclass, "HTTP_GATEWAY_TIME_OUT",
-                   mrb_fixnum_value(HttpStatus::HTTP_STATUS_GATEWAY_TIMEOUT));
-  mrb_define_const(
-      mrb, rclass, "HTTP_INSUFFICIENT_STORAGE",
-      mrb_fixnum_value(HttpStatus::HTTP_STATUS_INSUFFICIENT_STORAGE));
+  // define constants of HTTP status codes
+  for (auto p : HTTP_STATUS) {
+    mrb_define_const(mrb, rclass, p.second.c_str(), mrb_fixnum_value(p.first));
+  }
 
   // Log level
   mrb_define_const(mrb, rclass, "LOG_ERR", mrb_fixnum_value(0));
