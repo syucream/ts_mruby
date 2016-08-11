@@ -17,15 +17,11 @@
 #include <mruby.h>
 #include <mruby/value.h>
 
-#define MODULE_NAME "ts_mruby"
-#define MODULE_VERSION "0.1"
-
-#define MODULE_AUTHOR "Ryo Okubo"
-#define MODULE_EMAIL ""
-
+#define TS_MRUBY_PLUGIN_NAME "ts_mruby"
+const static char* TS_MRUBY_PLUGIN_VERSION = "0.1";
+const static char* TS_MRUBY_PLUGIN_AUTHOR = "Ryo Okubo";
+const static char* TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
-
-using HeaderVec = std::vector<std::pair<std::string, std::string>>;
 
 bool
 judge_tls(const std::string& scheme);
@@ -36,7 +32,7 @@ get_authority_pair(const std::string& authority, bool is_tls = false);
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
   int _statusCode;
-  HeaderVec _headers;
+  std::vector<std::pair<std::string, std::string>> _headers;
   std::string _message;
 
 public:
@@ -54,7 +50,7 @@ public:
 
   void appendHeader(const std::pair<std::string, std::string> &entry);
 
-  void appendHeaders(const HeaderVec &h);
+  void appendHeaders(const std::vector<std::pair<std::string, std::string>> &h);
 
   void handleInputComplete();
 };
