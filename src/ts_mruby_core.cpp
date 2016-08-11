@@ -73,9 +73,7 @@ static mrb_value ts_mrb_get_ts_mruby_version(mrb_state *mrb, mrb_value self) {
 static mrb_value ts_mrb_get_trafficserver_version(mrb_state *mrb,
                                                   mrb_value self) {
   const char *version = TSTrafficServerVersionGet();
-  size_t len = strlen(version);
-
-  return mrb_str_new(mrb, version, len);
+  return mrb_str_new(mrb, version, strlen(version));
 }
 
 static mrb_value ts_mrb_server_name(mrb_state *mrb, mrb_value self) {
@@ -88,7 +86,7 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self) {
   if (mrb_type(argv) != MRB_TT_STRING) {
     argv = mrb_funcall(mrb, argv, "to_s", 0, NULL);
   }
-  const string msg((char *)RSTRING_PTR(argv), RSTRING_LEN(argv));
+  const string msg(static_cast<char *>(RSTRING_PTR(argv)), RSTRING_LEN(argv));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   if (context->rputs == NULL) {
@@ -108,7 +106,7 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self) {
   if (mrb_type(argv) != MRB_TT_STRING) {
     argv = mrb_funcall(mrb, argv, "to_s", 0, NULL);
   }
-  string msg((char *)RSTRING_PTR(argv), RSTRING_LEN(argv));
+  string msg(static_cast<char *>(RSTRING_PTR(argv)), RSTRING_LEN(argv));
   msg += "\n";
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
@@ -199,7 +197,7 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
   }
 
   // save location uri
-  const string redirectUri((char *)RSTRING_PTR(uri), RSTRING_LEN(uri));
+  const string redirectUri(static_cast<char *>(RSTRING_PTR(uri)), RSTRING_LEN(uri));
   if (redirectUri.size() == 0) {
     return mrb_nil_value();
   }
