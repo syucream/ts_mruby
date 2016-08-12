@@ -1,16 +1,7 @@
-require 'factory_girl'
-
-# load fixtures
-FactoryGirl.definition_file_paths = %w(../factories/)
-FactoryGirl.find_definitions
-include FactoryGirl::Syntax::Methods
-
-# variables
-echo = build(:echo)
+require '../support/factory_girl_helper'
+include FactoryGirlHelper
 
 # generate template
-template = <<EOS
-ATS::echo "#{echo.body}"
+puts <<EOS
+ATS::echo "#{get(:echo).body}"
 EOS
-
-puts template
