@@ -1,9 +1,9 @@
 require './spec_helper'
 
 describe 'ATS::Filter class', :js => false do
-  let (:body_eq) { build(:body_eq) }
-  let (:transform_bang) { build(:transform_bang) }
-  let (:origin) { build(:origin) }
+  let (:body_eq) { get(:body_eq) }
+  let (:transform_bang) { get(:transform_bang) }
+  let (:origin) { get(:origin) }
 
   describe 'transform!' do
     it 'returns transformed response body' do
