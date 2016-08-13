@@ -47,11 +47,18 @@ static mrb_value ts_mrb_set_filter_body(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value ts_mrb_transform_filter_body_bang(mrb_state *mrb, mrb_value self) {
-  mrb_value block;
-  mrb_get_args(mrb, "&", &block);
+  // Enable to receive both of block and Proc obj
+  mrb_int argc;
+  mrb_value *argv, block;
+  mrb_get_args(mrb, "*&", &argv, &argc, &block);
+  if (argc && mrb_nil_p(block)) {
+    block = argv[0];
+  }
 
-  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  get_filter_plugin(context)->appendBlock(block);
+  if (!mrb_nil_p(block) && mrb_type(block) == MRB_TT_PROC) {
+    auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+    get_filter_plugin(context)->appendBlock(block);
+  }
 
   return self;
 }
@@ -67,5 +74,5 @@ void ts_mrb_filter_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_filter, "output=", ts_mrb_set_filter_body,
                     MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_filter, "transform!", ts_mrb_transform_filter_body_bang,
-                    MRB_ARGS_BLOCK());
+                    MRB_ARGS_REQ(1));
 }
