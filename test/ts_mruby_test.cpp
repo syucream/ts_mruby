@@ -42,9 +42,9 @@ TEST(TSRemapNewInstance, ts_mruby_main) {
   EXPECT_CALL(*cacheMock, store(_));
 
   // TODO replace constants with googletest fixtures
-  char *argv[] = {"", "ts_mruby.so", "filepath"};
-  EXPECT_EQ(TS_SUCCESS, TSRemapNewInstance(3, argv, nullptr, "", 0));
-  EXPECT_EQ(TS_ERROR, TSRemapNewInstance(-1, argv, nullptr, "", 0));
+  const char *argv[] = {"", "ts_mruby.so", "filepath"};
+  EXPECT_EQ(TS_SUCCESS, TSRemapNewInstance(3, const_cast<char**>(argv), nullptr, const_cast<char*>(""), 0));
+  EXPECT_EQ(TS_ERROR, TSRemapNewInstance(-1, const_cast<char**>(argv), nullptr, const_cast<char*>(""), 0));
 
   singleton.destroy();
   reset_global_shared();
