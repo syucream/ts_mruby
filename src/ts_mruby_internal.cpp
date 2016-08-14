@@ -128,7 +128,13 @@ void FilterPlugin::handleInputComplete() {
   if (!mrb_nil_p(_block)) {
     mrb_state *state = mrb_open();
     mrb_value rv = mrb_yield(state, _block, mrb_str_new(state, _origBuffer.c_str(), _origBuffer.length()));
-    _transformedBuffer = string(mrb_string_value_cstr(state, &rv));
+
+    // Convert to_s if the value isn't Ruby string
+    if (mrb_type(rv) != MRB_TT_STRING) {
+      rv = mrb_funcall(state, rv, "to_s", 0, NULL);
+    }
+
+    _transformedBuffer = string(RSTRING_PTR(rv), RSTRING_LEN(rv));
   }
 
   produce(_transformedBuffer);
