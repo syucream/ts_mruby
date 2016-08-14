@@ -45,6 +45,8 @@ get_record_data_type(TSOverridableConfigKey key) {
   case TS_CONFIG_LAST_ENTRY:
     type = TS_RECORDDATATYPE_NULL;
     break;
+  default:
+    break;
   }
 
   return type;
