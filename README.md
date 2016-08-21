@@ -44,6 +44,33 @@ unless whitelist.include?(conn.remote_ip)
 end
 ```
 
+Quickstart
+==========
+
+using Docker
+-------------
+
+* Example docker image has already published to Docker Hub. The image contains a test script(simply responds by ATS::echo), so you can test ts_mruby quickly:
+
+```
+$ docker pull syucream/ts_mruby
+$ docker run docker run -it syucream/ts_mruby /bin/bash
+root@ad7a82be8a65:/opt# trafficserver start
+root@ad7a82be8a65:/opt# curl http://localhost:8080/
+ts_mruby test
+```
+
+using Homebrew
+---------------
+
+* If you're a Mac OS X user, you can use Homebrew to install ts_mruby:
+
+```
+$ brew install https://raw.githubusercontent.com/syucream/ts_mruby/master/Formula/trafficserver-atscppapi.rb
+$ brew install --HEAD https://raw.githubusercontent.com/syucream/ts_mruby/master/Formula/ts_mruby.rb
+```
+
+
 Acknowledgement
 ===============
 Some components for mruby in this repository and sample scripts refer to [mod_mruby](https://github.com/matsumoto-r/mod_mruby) and [ngx_mruby](https://github.com/matsumoto-r/ngx_mruby)'s one under the MIT License.
