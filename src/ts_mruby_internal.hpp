@@ -100,14 +100,55 @@ struct TSMrubyResult {
   bool isRemapped = false;
 };
 
-struct TSMrubyContext {
-  atscppapi::Transaction *transaction;
+/*
+ * ts_mruby context
+ *
+ * It has a lifecycle similar to TS txn.
+ * And some pointer member will be released by atscppapi
+ *
+ */
+class TSMrubyContext {
+private:
+  TSMrubyResult result_;
 
-  RputsPlugin *rputs;
-  HeaderRewritePlugin *header_rewrite;
-  FilterPlugin *filter;
+  // NOTE: these resource's owner is atscppai
+  atscppapi::Transaction *transaction_;
+  RputsPlugin *rputs_;
+  HeaderRewritePlugin *header_rewrite_;
+  FilterPlugin *filter_;
 
-  TSMrubyResult result;
+  template <typename T>
+  void createAndAddPlugin_(T** ptr) {
+    if (transaction_ && !*ptr) {
+      *ptr = new T(*transaction_);
+      transaction_->addPlugin(*ptr);
+    }
+  }
+
+public:
+  atscppapi::Transaction*
+  getTransaction() { return transaction_; }
+  void
+  setTransaction(atscppapi::Transaction* transaction) { transaction_ = transaction; }
+
+  const TSMrubyResult
+  getResult() { return result_; }
+  void
+  setResult(TSMrubyResult r) { result_ = r; }
+
+  RputsPlugin* getRputsPlugin() { return rputs_; }
+  HeaderRewritePlugin* getHeaderRewritePlugin() { return header_rewrite_; }
+  FilterPlugin* getFilterPlugin() { return filter_; }
+
+  void registerRputsPlugin() {
+    createAndAddPlugin_<RputsPlugin>(&rputs_);
+  }
+  void registerHeaderRewritePlugin() {
+    createAndAddPlugin_<HeaderRewritePlugin>(&header_rewrite_);
+  }
+  void registerFilterPlugin() {
+    createAndAddPlugin_<FilterPlugin>(&filter_);
+  }
 };
 
 #endif // TS_MRUBY_INTERNAL_H
