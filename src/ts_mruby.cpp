@@ -66,19 +66,20 @@ protected:
     RProc *proc = states->getRProc(filepath_);
 
     // set execution context
-    TSMrubyContext *context = new TSMrubyContext();
-    context->transaction = &transaction;
-    context->rputs = NULL;
-    mrb->ud = reinterpret_cast<void *>(context);
+    context_ = shared_ptr<TSMrubyContext>(new TSMrubyContext());
+    context_->transaction = &transaction;
+    context_->rputs = NULL;
+    mrb->ud = reinterpret_cast<void *>(context_.get());
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(mrb, proc, mrb_nil_value());
 
-    return context->result;
+    return context_->result;
   }
 
 private:
   string filepath_;
+  shared_ptr<TSMrubyContext> context_;
 };
 
 ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
