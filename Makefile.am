@@ -13,8 +13,8 @@ MRUBY_MAK_FILE = $(MRUBY_ROOT)/build/host/lib/libmruby.flags.mak
 include $(MRUBY_MAK_FILE)
 
 # configure settings related to ATS and mruby
-CPPFLAGS += -I$(TS_PREFIX_ROOT)include -I$(MRUBY_ROOT)include
-LDFLAGS  += -L$(TS_PREFIX_ROOT)lib $(MRUBY_LDFLAGS)
+CPPFLAGS += -I$(TS_PREFIX_ROOT)/include -I$(MRUBY_ROOT)/include
+LDFLAGS  += -L$(TS_PREFIX_ROOT)/lib $(MRUBY_LDFLAGS)
 LIBS     =  -latscppapi $(MRUBY_LIBS)
 
 
