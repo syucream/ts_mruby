@@ -61,7 +61,7 @@ static mrb_value ts_mrb_get_records(mrb_state *mrb, mrb_value self) {
 
   const auto config_key = static_cast<TSOverridableConfigKey>(index);
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  auto *transaction = context->transaction;
+  auto *transaction = context->getTransaction();
 
   bool successed = false;
   mrb_value rv = mrb_nil_value();
@@ -102,7 +102,7 @@ static mrb_value ts_mrb_set_records(mrb_state *mrb, mrb_value self) {
 
   const auto config_key = static_cast<TSOverridableConfigKey>(index);
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  auto *transaction = context->transaction;
+  auto *transaction = context->getTransaction();
 
   bool successed = false;
   switch(get_record_data_type(config_key)) {

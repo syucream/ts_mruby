@@ -28,13 +28,16 @@ static mrb_value ts_mrb_set_server(mrb_state *mrb, mrb_value self) {
   const string server(mserver, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  auto *transaction = context->transaction;
+  auto *transaction = context->getTransaction();
 
   Url& url = transaction->getClientRequest().getUrl();
   const auto authority = get_authority_pair(server, judge_tls(url.getScheme()));
   url.setHost(authority.first);
   url.setPort(authority.second);
-  context->result.isRemapped = true;
+
+  TSMrubyResult result;
+  result.isRemapped = true;
+  context->setResult(result);
 
   return self;
 }

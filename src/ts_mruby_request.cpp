@@ -59,7 +59,7 @@ static mrb_value ts_mrb_headers_in_obj(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_scheme(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   const string &scheme = transaction->getClientRequest().getUrl().getScheme();
   return mrb_str_new(mrb, scheme.c_str(), scheme.length());
@@ -67,7 +67,7 @@ static mrb_value ts_mrb_get_scheme(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_content_type(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
   Headers &headers = transaction->getClientRequest().getHeaders();
 
   const string &contype = headers[CONTENT_TYPE_KEY].values();
@@ -85,7 +85,7 @@ static mrb_value ts_mrb_set_content_type(mrb_state *mrb, mrb_value self) {
   const string contype(mcontype, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Headers &headers = transaction->getClientRequest().getHeaders();
   headers.set(CONTENT_TYPE_KEY, contype);
@@ -95,7 +95,7 @@ static mrb_value ts_mrb_set_content_type(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   const string path = "/" + transaction->getClientRequest().getUrl().getPath();
   return mrb_str_new(mrb, path.c_str(), path.length());
@@ -108,7 +108,7 @@ static mrb_value ts_mrb_set_request_uri(mrb_state *mrb, mrb_value self) {
   const string uri(muri, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
   transaction->getClientRequest().getUrl().setPath(uri);
 
   return self;
@@ -116,8 +116,8 @@ static mrb_value ts_mrb_set_request_uri(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_request_unparsed_uri(mrb_state *mrb,
                                                  mrb_value self) {
-  const TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  TSMrubyContext *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->getTransaction();
 
   const Url &url = transaction->getClientRequest().getUrl();
   const string unparsedUri = "/" + url.getPath() + "?" + url.getQuery();
@@ -133,7 +133,7 @@ static mrb_value ts_mrb_set_request_unparsed_uri(mrb_state *mrb,
   const string unparsedUri(muri, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
   Url &url = transaction->getClientRequest().getUrl();
 
   size_t found = unparsedUri.find_first_of('?');
@@ -153,7 +153,7 @@ static mrb_value ts_mrb_set_request_unparsed_uri(mrb_state *mrb,
 
 static mrb_value ts_mrb_get_request_method(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   HttpMethod methodIndex = transaction->getClientRequest().getMethod();
   const string &method = HTTP_METHOD_STRINGS[methodIndex];
@@ -163,7 +163,7 @@ static mrb_value ts_mrb_get_request_method(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_request_protocol(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   // FIXME Currently SPDY, HTTP/2 and others are unsupported
   HttpVersion versionIndex = transaction->getClientRequest().getVersion();
@@ -174,7 +174,7 @@ static mrb_value ts_mrb_get_request_protocol(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_request_args(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   const Url &url = transaction->getClientRequest().getUrl();
   const string &args = url.getQuery();
@@ -189,7 +189,7 @@ static mrb_value ts_mrb_set_request_args(mrb_state *mrb, mrb_value self) {
   const string args(margs, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Url &url = transaction->getClientRequest().getUrl();
   url.setQuery(args);
@@ -199,7 +199,7 @@ static mrb_value ts_mrb_set_request_args(mrb_state *mrb, mrb_value self) {
 
 static mrb_value ts_mrb_get_request_headers_in(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Headers &headers = transaction->getClientRequest().getHeaders();
   return ts_mrb_get_request_header(mrb, headers);
@@ -213,7 +213,7 @@ static mrb_value ts_mrb_set_request_headers_in(mrb_state *mrb, mrb_value self) {
   const string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Headers &headers = transaction->getClientRequest().getHeaders();
   headers.set(key_str, val_str);
@@ -228,7 +228,7 @@ static mrb_value ts_mrb_del_request_headers_in(mrb_state *mrb, mrb_value self) {
   const string key(mkey, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Headers &headers = transaction->getClientRequest().getHeaders();
   headers.erase(key);
@@ -239,7 +239,7 @@ static mrb_value ts_mrb_del_request_headers_in(mrb_state *mrb, mrb_value self) {
 static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
                                                     mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->transaction;
+  Transaction *transaction = context->getTransaction();
 
   Headers &headers = transaction->getClientRequest().getHeaders();
   mrb_value hash = mrb_hash_new(mrb);
@@ -268,14 +268,8 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
   const string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-
-  if (context->header_rewrite == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->header_rewrite = new HeaderRewritePlugin(*transaction);
-    transaction->addPlugin(context->header_rewrite);
-  }
-  context->header_rewrite->addRewriteRule(
+  context->registerHeaderRewritePlugin();
+  context->getHeaderRewritePlugin()->addRewriteRule(
       key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
 
   return self;
@@ -289,13 +283,8 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
   const string key(mkey, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->header_rewrite == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->header_rewrite = new HeaderRewritePlugin(*transaction);
-    transaction->addPlugin(context->header_rewrite);
-  }
-  context->header_rewrite->addRewriteRule(
+  context->registerHeaderRewritePlugin();
+  context->getHeaderRewritePlugin()->addRewriteRule(
       key, "", HeaderRewritePlugin::Operator::DELETE);
 
   return self;

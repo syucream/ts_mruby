@@ -67,14 +67,13 @@ protected:
 
     // set execution context
     context_ = shared_ptr<TSMrubyContext>(new TSMrubyContext());
-    context_->transaction = &transaction;
-    context_->rputs = NULL;
+    context_->setTransaction(&transaction);
     mrb->ud = reinterpret_cast<void *>(context_.get());
 
     // execute mruby script when ATS pre-remap hook occurs.
     mrb_run(mrb, proc, mrb_nil_value());
 
-    return context_->result;
+    return context_->getResult();
   }
 
 private:

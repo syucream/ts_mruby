@@ -22,14 +22,8 @@ using namespace atscppapi;
 using std::string;
 
 static FilterPlugin *get_filter_plugin(TSMrubyContext *context) {
-  if (context->filter == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->filter = new FilterPlugin(*transaction);
-    transaction->addPlugin(context->filter);
-  }
-
-  return context->filter;
+  context->registerFilterPlugin();
+  return context->getFilterPlugin();
 }
 
 static mrb_value ts_mrb_set_filter_body(mrb_state *mrb, mrb_value self) {

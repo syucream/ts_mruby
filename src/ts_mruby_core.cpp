@@ -89,13 +89,8 @@ static mrb_value ts_mrb_rputs(mrb_state *mrb, mrb_value self) {
   const string msg(static_cast<char *>(RSTRING_PTR(argv)), RSTRING_LEN(argv));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->rputs == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->rputs = new RputsPlugin(*transaction);
-    transaction->addPlugin(context->rputs);
-  }
-  context->rputs->appendMessage(msg);
+  context->registerRputsPlugin();
+  context->getRputsPlugin()->appendMessage(msg);
 
   return self;
 }
@@ -110,13 +105,8 @@ static mrb_value ts_mrb_echo(mrb_state *mrb, mrb_value self) {
   msg += "\n";
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->rputs == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->rputs = new RputsPlugin(*transaction);
-    transaction->addPlugin(context->rputs);
-  }
-  context->rputs->appendMessage(msg);
+  context->registerRputsPlugin();
+  context->getRputsPlugin()->appendMessage(msg);
 
   return self;
 }
@@ -126,13 +116,10 @@ static mrb_value ts_mrb_send_header(mrb_state *mrb, mrb_value self) {
   mrb_get_args(mrb, "i", &statusCode);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->rputs == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->rputs = new RputsPlugin(*transaction);
-    transaction->addPlugin(context->rputs);
+  if (context->getRputsPlugin()) {
+    context->getRputsPlugin()->setStatusCode(statusCode);
   } else {
-    context->rputs->setStatusCode(statusCode);
+    context->registerRputsPlugin();
   }
 
   return self;
@@ -203,14 +190,11 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
   }
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->rputs == NULL) {
-    Transaction *transaction = context->transaction;
-
-    context->rputs = new RputsPlugin(*transaction);
-    context->rputs->appendHeader(make_pair("Location", redirectUri));
-    transaction->addPlugin(context->rputs);
+  if (context->getRputsPlugin()) {
+    context->getRputsPlugin()->setStatusCode(status_code);
   } else {
-    context->rputs->setStatusCode(status_code);
+    context->registerRputsPlugin();
+    context->getRputsPlugin()->appendHeader(make_pair("Location", redirectUri));
   }
 
   return self;
