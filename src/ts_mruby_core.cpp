@@ -116,11 +116,8 @@ static mrb_value ts_mrb_send_header(mrb_state *mrb, mrb_value self) {
   mrb_get_args(mrb, "i", &statusCode);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->getRputsPlugin()) {
-    context->getRputsPlugin()->setStatusCode(statusCode);
-  } else {
-    context->registerRputsPlugin();
-  }
+  context->registerRputsPlugin();
+  context->getRputsPlugin()->setStatusCode(statusCode);
 
   return self;
 }
@@ -190,12 +187,9 @@ static mrb_value ts_mrb_redirect(mrb_state *mrb, mrb_value self) {
   }
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  if (context->getRputsPlugin()) {
-    context->getRputsPlugin()->setStatusCode(status_code);
-  } else {
-    context->registerRputsPlugin();
-    context->getRputsPlugin()->appendHeader(make_pair("Location", redirectUri));
-  }
+  context->registerRputsPlugin();
+  context->getRputsPlugin()->setStatusCode(status_code);
+  context->getRputsPlugin()->appendHeader(make_pair("Location", redirectUri));
 
   return self;
 }
