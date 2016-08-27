@@ -31,15 +31,15 @@ get_authority_pair(const std::string& authority, bool is_tls = false);
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
-  int _statusCode;
-  std::vector<std::pair<std::string, std::string>> _headers;
-  std::string _message;
+  int status_code_;
+  std::vector<std::pair<std::string, std::string>> headers_;
+  std::string message_;
 
 public:
   RputsPlugin(atscppapi::Transaction &transaction, int code = 200)
       : atscppapi::InterceptPlugin(
             transaction, atscppapi::InterceptPlugin::TRANSACTION_INTERCEPT),
-        _statusCode(code), _message("") {}
+        status_code_(code), message_("") {}
 
   void consume(const std::string &data,
                atscppapi::InterceptPlugin::RequestDataType type){};
@@ -75,18 +75,18 @@ private:
 
 class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
-  std::string _origBuffer;
-  std::string _transformedBuffer;
-  mrb_value _block;
+  std::string origBuffer_;
+  std::string transformedBuffer_;
+  mrb_value block_;
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
       : atscppapi::TransformationPlugin(transaction, RESPONSE_TRANSFORMATION) {
     registerHook(HOOK_SEND_RESPONSE_HEADERS);
 
-    _origBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
-    _transformedBuffer.reserve(FILTER_RESERVED_BUFFER_SIZE);
-    _block = mrb_nil_value();
+    origBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    transformedBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
+    block_ = mrb_nil_value();
   }
 
   void appendBody(const std::string &data);

@@ -56,28 +56,28 @@ get_authority_pair(const string& authority, bool is_tls) {
   return make_pair(splitted[0], port);
 }
 
-void RputsPlugin::setStatusCode(int code) { _statusCode = code; }
+void RputsPlugin::setStatusCode(int code) { status_code_ = code; }
 
-void RputsPlugin::appendMessage(const string &msg) { _message += msg; }
+void RputsPlugin::appendMessage(const string &msg) { message_ += msg; }
 
 void RputsPlugin::appendHeader(const pair<string, string> &entry) {
-  _headers.push_back(entry);
+  headers_.push_back(entry);
 }
 
 void RputsPlugin::appendHeaders(const vector<pair<string, string>> &h) {
-  _headers.insert(_headers.end(), h.begin(), h.end());
+  headers_.insert(headers_.end(), h.begin(), h.end());
 }
 
 void RputsPlugin::handleInputComplete() {
-  string response("HTTP/1.1 " + std::to_string(_statusCode) + " " +
-                  TSHttpHdrReasonLookup(static_cast<TSHttpStatus>(_statusCode)) + "\r\n");
+  string response("HTTP/1.1 " + std::to_string(status_code_) + " " +
+                  TSHttpHdrReasonLookup(static_cast<TSHttpStatus>(status_code_)) + "\r\n");
 
   // make response header
-  if (!_message.empty()) {
-    response += "Content-Length: " + std::to_string(_message.size()) + "\r\n";
+  if (!message_.empty()) {
+    response += "Content-Length: " + std::to_string(message_.size()) + "\r\n";
   }
 
-  for_each(_headers.begin(), _headers.end(),
+  for_each(headers_.begin(), headers_.end(),
            [&response](pair<string, string> entry) {
              response += entry.first + ": " + entry.second + "\r\n";
            });
@@ -85,7 +85,7 @@ void RputsPlugin::handleInputComplete() {
   // make response body
   response += "\r\n";
   produce(response);
-  response = _message + "\r\n";
+  response = message_ + "\r\n";
   produce(response);
   setOutputComplete();
 }
@@ -118,26 +118,26 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
-void FilterPlugin::appendBody(const string &data) { _transformedBuffer.append(data); }
+void FilterPlugin::appendBody(const string &data) { transformedBuffer_.append(data); }
 
-void FilterPlugin::appendBlock(const mrb_value block) { _block = block; }
+void FilterPlugin::appendBlock(const mrb_value block) { block_ = block; }
 
-void FilterPlugin::consume(const std::string &data) { _origBuffer.append(data); }
+void FilterPlugin::consume(const std::string &data) { origBuffer_.append(data); }
 
 void FilterPlugin::handleInputComplete() {
-  if (!mrb_nil_p(_block)) {
+  if (!mrb_nil_p(block_)) {
     mrb_state *state = mrb_open();
-    mrb_value rv = mrb_yield(state, _block, mrb_str_new(state, _origBuffer.c_str(), _origBuffer.length()));
+    mrb_value rv = mrb_yield(state, block_, mrb_str_new(state, origBuffer_.c_str(), origBuffer_.length()));
 
     // Convert to_s if the value isn't Ruby string
     if (mrb_type(rv) != MRB_TT_STRING) {
       rv = mrb_funcall(state, rv, "to_s", 0, NULL);
     }
 
-    _transformedBuffer = string(RSTRING_PTR(rv), RSTRING_LEN(rv));
+    transformedBuffer_ = string(RSTRING_PTR(rv), RSTRING_LEN(rv));
   }
 
-  produce(_transformedBuffer);
+  produce(transformedBuffer_);
   setOutputComplete();
 }
 
