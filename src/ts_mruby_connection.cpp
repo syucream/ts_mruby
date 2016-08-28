@@ -37,7 +37,6 @@ static mrb_value ts_mrb_get_conn_var_remote_port(mrb_state *mrb,
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->getTransaction();
 
-
   const sockaddr *addr = transaction->getClientAddress();
   uint16_t remote_port = utils::getPort(addr);
   const string &port_str = std::to_string(remote_port);

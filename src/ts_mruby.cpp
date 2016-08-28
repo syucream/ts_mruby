@@ -9,15 +9,14 @@
 #include <atscppapi/RemapPlugin.h>
 
 #include "ts_mruby.hpp"
-#include "ts_mruby_internal.hpp"
 #include "ts_mruby_init.hpp"
+#include "ts_mruby_internal.hpp"
 #include "ts_mruby_internal.hpp"
 #include "ts_mruby_request.hpp"
 #include "utils.hpp"
 
 using namespace std;
 using namespace atscppapi;
-
 
 namespace {
 
@@ -141,7 +140,8 @@ public:
 // As global plugin
 void TSPluginInit(int argc, const char *argv[]) {
   if (argc == 2) {
-    RegisterGlobalPlugin(TS_MRUBY_PLUGIN_NAME, TS_MRUBY_PLUGIN_AUTHOR, TS_MRUBY_PLUGIN_EMAIL);
+    RegisterGlobalPlugin(TS_MRUBY_PLUGIN_NAME, TS_MRUBY_PLUGIN_AUTHOR,
+                         TS_MRUBY_PLUGIN_EMAIL);
 
     if (!scriptsCache) {
       scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
