@@ -13,6 +13,11 @@ void ts_mrb_class_init(mrb_state *mrb){}
 
 namespace {
 
+TEST(ThreadLocalMRubyStates, getMrb) {
+  ThreadLocalMRubyStates state;
+  EXPECT_NE(nullptr, state.getMrb());
+}
+
 // Reset global and thread-shared variables
 // FIXME It may exist a more better way than this, I believe ...
 void reset_global_shared() {
