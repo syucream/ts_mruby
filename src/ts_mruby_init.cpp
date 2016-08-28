@@ -7,9 +7,9 @@
 #include "ts_mruby_connection.hpp"
 #include "ts_mruby_core.hpp"
 #include "ts_mruby_filter.hpp"
+#include "ts_mruby_records.hpp"
 #include "ts_mruby_request.hpp"
 #include "ts_mruby_upstream.hpp"
-#include "ts_mruby_records.hpp"
 
 #include <mruby.h>
 #include <mruby/compile.h>

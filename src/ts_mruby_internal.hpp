@@ -18,16 +18,15 @@
 #include <mruby/value.h>
 
 #define TS_MRUBY_PLUGIN_NAME "ts_mruby"
-const static char* TS_MRUBY_PLUGIN_VERSION = "0.1";
-const static char* TS_MRUBY_PLUGIN_AUTHOR = "Ryo Okubo";
-const static char* TS_MRUBY_PLUGIN_EMAIL = "";
+const static char *TS_MRUBY_PLUGIN_VERSION = "0.1";
+const static char *TS_MRUBY_PLUGIN_AUTHOR = "Ryo Okubo";
+const static char *TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 
-bool
-judge_tls(const std::string& scheme);
+bool judge_tls(const std::string &scheme);
 
 std::pair<std::string, uint16_t>
-get_authority_pair(const std::string& authority, bool is_tls = false);
+get_authority_pair(const std::string &authority, bool is_tls = false);
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
@@ -117,8 +116,7 @@ private:
   HeaderRewritePlugin *header_rewrite_;
   FilterPlugin *filter_;
 
-  template <typename T>
-  void createAndAddPlugin_(T** ptr) {
+  template <typename T> void createAndAddPlugin_(T **ptr) {
     if (transaction_ && !*ptr) {
       *ptr = new T(*transaction_);
       transaction_->addPlugin(*ptr);
@@ -126,29 +124,23 @@ private:
   }
 
 public:
-  atscppapi::Transaction*
-  getTransaction() { return transaction_; }
-  void
-  setTransaction(atscppapi::Transaction* transaction) { transaction_ = transaction; }
-
-  const TSMrubyResult
-  getResult() { return result_; }
-  void
-  setResult(TSMrubyResult r) { result_ = r; }
-
-  RputsPlugin* getRputsPlugin() { return rputs_; }
-  HeaderRewritePlugin* getHeaderRewritePlugin() { return header_rewrite_; }
-  FilterPlugin* getFilterPlugin() { return filter_; }
-
-  void registerRputsPlugin() {
-    createAndAddPlugin_<RputsPlugin>(&rputs_);
+  atscppapi::Transaction *getTransaction() { return transaction_; }
+  void setTransaction(atscppapi::Transaction *transaction) {
+    transaction_ = transaction;
   }
+
+  const TSMrubyResult getResult() { return result_; }
+  void setResult(TSMrubyResult r) { result_ = r; }
+
+  RputsPlugin *getRputsPlugin() { return rputs_; }
+  HeaderRewritePlugin *getHeaderRewritePlugin() { return header_rewrite_; }
+  FilterPlugin *getFilterPlugin() { return filter_; }
+
+  void registerRputsPlugin() { createAndAddPlugin_<RputsPlugin>(&rputs_); }
   void registerHeaderRewritePlugin() {
     createAndAddPlugin_<HeaderRewritePlugin>(&header_rewrite_);
   }
-  void registerFilterPlugin() {
-    createAndAddPlugin_<FilterPlugin>(&filter_);
-  }
+  void registerFilterPlugin() { createAndAddPlugin_<FilterPlugin>(&filter_); }
 };
 
 #endif // TS_MRUBY_INTERNAL_H

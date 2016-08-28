@@ -1,7 +1,7 @@
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
-#include <iostream>
-#include <fstream>
 
 #include <mruby.h>
 #include <mruby/compile.h>
@@ -21,13 +21,16 @@ public:
   MOCKABLE_ATTR
   void store(const std::string &filepath) {
     std::ifstream ifs(filepath);
-    const std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    const std::string code((std::istreambuf_iterator<char>(ifs)),
+                           std::istreambuf_iterator<char>());
 
     scripts_.insert(make_pair(filepath, code));
   }
 
   MOCKABLE_ATTR
-  const std::string &load(const std::string &filepath) { return scripts_[filepath]; }
+  const std::string &load(const std::string &filepath) {
+    return scripts_[filepath];
+  }
 
 #ifdef MOCKING
   using mock_type = class MrubyScriptsCacheMock;

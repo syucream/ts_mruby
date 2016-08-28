@@ -9,21 +9,20 @@
 #include <sstream>
 #include <string>
 
-#include <ts/ts.h>
 #include <mruby/string.h>
+#include <ts/ts.h>
 
 using namespace std;
 using namespace atscppapi;
 
 namespace {
- 
-vector<string>
-split(const string& str, char delimiter) {
+
+vector<string> split(const string &str, char delimiter) {
   vector<string> splitted;
 
   string item;
   istringstream ss(str);
-  while(getline(ss, item, delimiter)) {
+  while (getline(ss, item, delimiter)) {
     if (!item.empty()) {
       splitted.push_back(item);
     }
@@ -34,17 +33,16 @@ split(const string& str, char delimiter) {
 
 } // anonymous namespace
 
-bool
-judge_tls(const string& scheme) {
+bool judge_tls(const string &scheme) {
   if (scheme == "https") {
     return true;
   }
   return false;
 }
 
-pair<string, uint16_t>
-get_authority_pair(const string& authority, bool is_tls) {
-  const vector<string>& splitted = split(authority, ':');
+pair<string, uint16_t> get_authority_pair(const string &authority,
+                                          bool is_tls) {
+  const vector<string> &splitted = split(authority, ':');
 
   uint16_t port = 80;
   if (splitted.size() == 2) {
@@ -69,8 +67,9 @@ void RputsPlugin::appendHeaders(const vector<pair<string, string>> &h) {
 }
 
 void RputsPlugin::handleInputComplete() {
-  string response("HTTP/1.1 " + std::to_string(status_code_) + " " +
-                  TSHttpHdrReasonLookup(static_cast<TSHttpStatus>(status_code_)) + "\r\n");
+  string response(
+      "HTTP/1.1 " + std::to_string(status_code_) + " " +
+      TSHttpHdrReasonLookup(static_cast<TSHttpStatus>(status_code_)) + "\r\n");
 
   // make response header
   if (!message_.empty()) {
@@ -118,16 +117,22 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
-void FilterPlugin::appendBody(const string &data) { transformedBuffer_.append(data); }
+void FilterPlugin::appendBody(const string &data) {
+  transformedBuffer_.append(data);
+}
 
 void FilterPlugin::appendBlock(const mrb_value block) { block_ = block; }
 
-void FilterPlugin::consume(const std::string &data) { origBuffer_.append(data); }
+void FilterPlugin::consume(const std::string &data) {
+  origBuffer_.append(data);
+}
 
 void FilterPlugin::handleInputComplete() {
   if (!mrb_nil_p(block_)) {
     mrb_state *state = mrb_open();
-    mrb_value rv = mrb_yield(state, block_, mrb_str_new(state, origBuffer_.c_str(), origBuffer_.length()));
+    mrb_value rv =
+        mrb_yield(state, block_, mrb_str_new(state, origBuffer_.c_str(),
+                                             origBuffer_.length()));
 
     // Convert to_s if the value isn't Ruby string
     if (mrb_type(rv) != MRB_TT_STRING) {
@@ -140,5 +145,3 @@ void FilterPlugin::handleInputComplete() {
   produce(transformedBuffer_);
   setOutputComplete();
 }
-
-
