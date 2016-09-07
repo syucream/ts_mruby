@@ -6,16 +6,26 @@
 #ifndef TS_MRUBY_INTERNAL_H
 #define TS_MRUBY_INTERNAL_H
 
-#include <atscppapi/InterceptPlugin.h>
-#include <atscppapi/Transaction.h>
-#include <atscppapi/TransformationPlugin.h>
+#include <iostream>
 #include <map>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include <atscppapi/InterceptPlugin.h>
+#include <atscppapi/Transaction.h>
+#include <atscppapi/TransformationPlugin.h>
 #include <mruby.h>
 #include <mruby/value.h>
+
+// Enable to unit test
+#ifdef MOCKING
+#define MOCKABLE_ATTR virtual
+#else
+#define MOCKABLE_ATTR
+#endif // MOCKING
+
 
 #define TS_MRUBY_PLUGIN_NAME "ts_mruby"
 const static char *TS_MRUBY_PLUGIN_VERSION = "0.1";
@@ -27,6 +37,38 @@ bool judge_tls(const std::string &scheme);
 
 std::pair<std::string, uint16_t>
 get_authority_pair(const std::string &authority, bool is_tls = false);
+
+namespace ts_mruby {
+
+/*
+ * Thread local mrb_state and RProc*'s
+ */
+class ThreadLocalMRubyStates {
+public:
+  ThreadLocalMRubyStates();
+  ~ThreadLocalMRubyStates();
+
+  mrb_state *getMrb() { return state_; }
+
+  RProc *getRProc(const std::string &key);
+
+private:
+  mrb_state *state_;
+  std::map<std::string, RProc *> procCache_;
+};
+
+/*
+ * Getter for thread-shared mruby script cache
+ */
+class MrubyScriptsCache;
+MrubyScriptsCache* getInitializedGlobalScriptCache(const std::string& filepath);
+
+/* 
+ * Getter for thread-local mrb_state*
+ */
+ThreadLocalMRubyStates *getThreadLocalMrubyStates();
+
+} // ts_mruby namespace
 
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
