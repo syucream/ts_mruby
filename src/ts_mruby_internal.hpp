@@ -185,4 +185,34 @@ public:
   void registerFilterPlugin() { createAndAddPlugin_<FilterPlugin>(&filter_); }
 };
 
+/**
+ * mrb_value RAII
+ *
+ * Manage mrb_gc_register() / mrb_gc_unregister() to keep an mrb_value from mruby GC.
+ * Recommend to use it with shared_ptr to avoid leak.
+ *
+ * This constractor requires that the 2nd argument is rvalue
+ *
+ */
+class TSMrubyValue {
+private:
+  mrb_state* mrb_;
+  mrb_value value_;
+
+public:
+  TSMrubyValue(mrb_state* mrb, mrb_value&& value)
+    : mrb_(mrb), value_(value) {
+    // keep mrb_value from GC.
+    mrb_gc_register(mrb_, value_);
+  }
+
+  ~TSMrubyValue() {
+    // unmark mrb_value to release.
+    mrb_gc_unregister(mrb_, value_);
+  }
+
+  mrb_value getValue() { return value_; }
+
+};
+
 #endif // TS_MRUBY_INTERNAL_H
