@@ -163,6 +163,18 @@ struct TSMrubyResult {
 };
 
 /*
+ * Current Transaction state.
+ * It nearly equal atscppapi::Plugin::HookType
+ *
+ */
+enum class TransactionStateTag : int {
+  READ_REQUEST_HEADERS,
+  SEND_REQUEST_HEADERS,
+  READ_RESPONSE_HEADERS,
+  SEND_RESPONSE_HEADERS,
+};
+
+/*
  * ts_mruby context
  *
  * It has a lifecycle similar to TS txn.
@@ -171,6 +183,7 @@ struct TSMrubyResult {
  */
 class TSMrubyContext {
 private:
+  TransactionStateTag state_tag_;
   TSMrubyResult result_;
 
   // NOTE: these resource's owner is atscppai
@@ -187,12 +200,15 @@ private:
   }
 
 public:
+  TSMrubyContext() 
+    : state_tag_(TransactionStateTag::READ_REQUEST_HEADERS) {}
+
   atscppapi::Transaction *getTransaction() { return transaction_; }
   void setTransaction(atscppapi::Transaction *transaction) {
     transaction_ = transaction;
   }
 
-  const TSMrubyResult getResult() { return result_; }
+  const TSMrubyResult getResult() const { return result_; }
   void setResult(TSMrubyResult r) { result_ = r; }
 
   RputsPlugin *getRputsPlugin() { return rputs_; }
@@ -204,6 +220,9 @@ public:
     createAndAddPlugin_<HeaderRewritePlugin>(&header_rewrite_);
   }
   void registerFilterPlugin() { createAndAddPlugin_<FilterPlugin>(&filter_); }
+
+  TransactionStateTag getStateTag() const { return state_tag_; }
+  void setStateTag(TransactionStateTag tag) { state_tag_ = tag; }
 };
 
 /**

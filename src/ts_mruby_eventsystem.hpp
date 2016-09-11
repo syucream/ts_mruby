@@ -21,7 +21,7 @@ void ts_mrb_eventsystem_class_init(mrb_state *mrb, struct RClass *rclass);
 class EventSystemPlugin : public atscppapi::TransactionPlugin {
 private:
   std::shared_ptr<TSMrubyValue> handler_obj_;
-  mrb_value callHandler_(atscppapi::Transaction&, const std::string&);
+  mrb_value callHandler_(std::shared_ptr<TSMrubyContext>, const std::string&);
 
 public:
   EventSystemPlugin(atscppapi::Transaction &transaction, mrb_state* mrb, struct RClass* rclass)

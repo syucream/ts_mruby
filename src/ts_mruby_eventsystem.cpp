@@ -26,34 +26,42 @@ static const string SEND_RESPONSE_HDR_HANDLER = "on_send_response_hdr";
 
 void
 EventSystemPlugin::handleSendRequestHeaders(Transaction& transaction) {
-  callHandler_(transaction, SEND_REQUEST_HDR_HANDLER);
+  auto context = shared_ptr<TSMrubyContext>(new TSMrubyContext());
+  context->setTransaction(&transaction);
+  context->setStateTag(TransactionStateTag::SEND_REQUEST_HEADERS);
+
+  callHandler_(move(context), SEND_REQUEST_HDR_HANDLER);
 
   transaction.resume();
 }
 
 void
 EventSystemPlugin::handleReadResponseHeaders(Transaction& transaction) {
-  callHandler_(transaction, READ_RESPONSE_HDR_HANDLER);
+  auto context = shared_ptr<TSMrubyContext>(new TSMrubyContext());
+  context->setTransaction(&transaction);
+  context->setStateTag(TransactionStateTag::READ_RESPONSE_HEADERS);
+
+  callHandler_(move(context), READ_RESPONSE_HDR_HANDLER);
 
   transaction.resume();
 }
 
 void
 EventSystemPlugin::handleSendResponseHeaders(Transaction& transaction) {
-  callHandler_(transaction, SEND_RESPONSE_HDR_HANDLER);
+  auto context = shared_ptr<TSMrubyContext>(new TSMrubyContext());
+  context->setTransaction(&transaction);
+  context->setStateTag(TransactionStateTag::SEND_RESPONSE_HEADERS);
+
+  callHandler_(move(context), SEND_RESPONSE_HDR_HANDLER);
 
   transaction.resume();
 }
 
 mrb_value
-EventSystemPlugin::callHandler_(Transaction& transaction, const string& sym) {
+EventSystemPlugin::callHandler_(shared_ptr<TSMrubyContext> context, const string& sym) {
   auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
   mrb_state* mrb = tlmrb->getMrb();
-
-  // Set context
-  auto context_ = shared_ptr<TSMrubyContext>(new TSMrubyContext());
-  context_->setTransaction(&transaction);
-  mrb->ud = reinterpret_cast<void *>(context_.get());
+  mrb->ud = reinterpret_cast<void *>(context.get());
 
   // Run mruby script
   mrb_value rv = mrb_funcall(mrb, handler_obj_->getValue(), sym.c_str(), 0, nullptr);
@@ -65,11 +73,6 @@ static mrb_value ts_mrb_register_es(mrb_state *mrb,
                                     mrb_value self) {
   mrb_value argv;
   mrb_get_args(mrb, "C", &argv);
-
-  if (mrb_type(argv) != MRB_TT_CLASS) {
-    // TODO raise exception ?
-    return self;
-  }
   struct RClass* handler_class = mrb_class_ptr(argv);
 
   auto* context = reinterpret_cast<TSMrubyContext *>(mrb->ud);

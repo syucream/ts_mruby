@@ -22,6 +22,8 @@ using std::string;
 
 const string CONTENT_TYPE_KEY = "Content-Type";
 
+namespace {
+
 static mrb_value ts_mrb_get_class_obj(mrb_state *mrb, mrb_value self,
                                       char *obj_id, char *class_name) {
   mrb_value obj;
@@ -51,6 +53,8 @@ static mrb_value ts_mrb_get_request_header(mrb_state *mrb, Headers &headers) {
     return mrb_nil_value();
   }
 }
+
+} // anonymous namespace
 
 static mrb_value ts_mrb_headers_in_obj(mrb_state *mrb, mrb_value self) {
   return ts_mrb_get_class_obj(mrb, self, (char *)"headers_in_obj",
@@ -261,10 +265,18 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
 
 static mrb_value ts_mrb_get_request_headers_out(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->getTransaction();
 
-  // TODO Switch response obj based on hook timing
-  Headers &headers = transaction->getServerResponse().getHeaders();
+  const TransactionStateTag current = context->getStateTag();
+  if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
+      current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    return self;
+  }
+
+  auto *transaction = context->getTransaction();
+  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+    transaction->getServerResponse().getHeaders(): 
+    transaction->getClientResponse().getHeaders();
 
   return ts_mrb_get_request_header(mrb, headers);
 }
@@ -278,9 +290,25 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
   const string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  context->registerHeaderRewritePlugin();
-  context->getHeaderRewritePlugin()->addRewriteRule(
-      key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+
+  const TransactionStateTag current = context->getStateTag();
+  switch(current) {
+  case TransactionStateTag::READ_REQUEST_HEADERS:
+    context->registerHeaderRewritePlugin();
+    context->getHeaderRewritePlugin()->addRewriteRule(
+        key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+    break;
+  case TransactionStateTag::SEND_RESPONSE_HEADERS:
+    {
+      auto *transaction = context->getTransaction();
+      Headers &headers = transaction->getClientResponse().getHeaders();
+      headers.set(key_str, val_str);
+    }
+    break;
+  default:
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    break;
+  }
 
   return self;
 }
@@ -293,9 +321,25 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
   const string key(mkey, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  context->registerHeaderRewritePlugin();
-  context->getHeaderRewritePlugin()->addRewriteRule(
-      key, "", HeaderRewritePlugin::Operator::DELETE);
+
+  const TransactionStateTag current = context->getStateTag();
+  switch(current) {
+  case TransactionStateTag::READ_REQUEST_HEADERS:
+    context->registerHeaderRewritePlugin();
+    context->getHeaderRewritePlugin()->addRewriteRule(
+        key, "", HeaderRewritePlugin::Operator::DELETE);
+    break;
+  case TransactionStateTag::SEND_RESPONSE_HEADERS:
+    {
+      auto *transaction = context->getTransaction();
+      Headers &headers = transaction->getClientResponse().getHeaders();
+      headers.erase(key);
+    }
+    break;
+  default:
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    break;
+  }
 
   return self;
 }
@@ -303,12 +347,20 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
 static mrb_value ts_mrb_get_request_headers_out_hash(mrb_state *mrb,
                                                     mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->getTransaction();
 
-  // TODO Switch response obj based on hook timing
-  Headers &headers = transaction->getServerResponse().getHeaders();
+  const TransactionStateTag current = context->getStateTag();
+  if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
+      current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    return self;
+  }
+
+  auto *transaction = context->getTransaction();
+  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+    transaction->getServerResponse().getHeaders(): 
+    transaction->getClientResponse().getHeaders();
+
   mrb_value hash = mrb_hash_new(mrb);
-
   const auto end = headers.end();
   for (auto it = headers.begin(); it != end; it++) {
     const string &headerName = (*it).name();
