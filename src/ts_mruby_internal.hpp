@@ -70,6 +70,14 @@ ThreadLocalMRubyStates *getThreadLocalMrubyStates();
 
 } // ts_mruby namespace
 
+
+/*
+ * rputs/echo intercept plugin
+ *
+ * It enables users specify response header/body.
+ * If the plugin is used, ATS doesn't fetch to origin server.
+ * 
+ */
 class RputsPlugin : public atscppapi::InterceptPlugin {
 private:
   int status_code_;
@@ -96,6 +104,12 @@ public:
   void handleInputComplete();
 };
 
+/*
+ * HeaderRewrite plugin
+ *
+ * It enables users specify response headers with low cost.
+ * 
+ */
 class HeaderRewritePlugin : public atscppapi::TransactionPlugin {
 public:
   HeaderRewritePlugin(atscppapi::Transaction &transaction)
@@ -114,6 +128,13 @@ private:
   Modifiers modifiers_;
 };
 
+/*
+ * Output Filter plugin
+ *
+ * It enables users modify response body with their mruby block.
+ * NOTE It does buffering response body.
+ * 
+ */
 class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
   std::string origBuffer_;
@@ -208,7 +229,8 @@ public:
 
   ~TSMrubyValue() {
     // unmark mrb_value to release.
-    mrb_gc_unregister(mrb_, value_);
+    // TODO Ensure thread-safety
+    // mrb_gc_unregister(mrb_, value_);
   }
 
   mrb_value getValue() { return value_; }
