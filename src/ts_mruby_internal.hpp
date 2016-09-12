@@ -201,7 +201,9 @@ private:
 
 public:
   TSMrubyContext() 
-    : state_tag_(TransactionStateTag::READ_REQUEST_HEADERS) {}
+    : state_tag_(TransactionStateTag::READ_REQUEST_HEADERS),
+      transaction_(nullptr), rputs_(nullptr), header_rewrite_(nullptr),
+      filter_(nullptr) {}
 
   atscppapi::Transaction *getTransaction() { return transaction_; }
   void setTransaction(atscppapi::Transaction *transaction) {
