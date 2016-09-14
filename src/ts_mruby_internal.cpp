@@ -8,6 +8,7 @@
 #include "utils.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -94,6 +95,7 @@ MrubyScriptsCache* getInitializedGlobalScriptCache(const string& filepath) {
 ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
   state_ = mrb_open();
   ts_mrb_class_init(state_);
+  manager_.set_mrb_state(state_);
 }
 
 ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
@@ -115,6 +117,9 @@ RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
     // store to cache
     procCache_.insert(make_pair(key, proc));
   }
+
+  // TODO move to other place?
+  manager_.cleanup_if_needed();
 
   return proc;
 }
@@ -247,4 +252,39 @@ void FilterPlugin::handleInputComplete() {
 
   produce(transformedBuffer_);
   setOutputComplete();
+}
+
+void LendableMrbValueManager::cleanup_if_needed() {
+  assert(mrb_ != nullptr);
+
+  // TODO double-checked locking? currently simply/unsafe pre-checking
+  if (returnedValues_.size() <= MAX_LENDABLE_VALUES / 2) return;
+
+  // TODO check current thread is owner of value_
+
+  pthread_mutex_lock(&mutex_);
+
+  for_each(returnedValues_.begin(), returnedValues_.end(), [this](mrb_value v) {
+    mrb_gc_unregister(mrb_, v);
+  });
+  returnedValues_.clear();
+
+  pthread_mutex_unlock(&mutex_);
+}
+
+shared_ptr<LentMrbValue>
+LendableMrbValueManager::lend_mrb_value(mrb_value value) {
+  assert(mrb_ != nullptr);
+
+  // Register value to avoid GC
+  mrb_gc_register(mrb_, value);
+
+  // Reserve unregister callback
+  auto callback = [this](mrb_value v) {
+    pthread_mutex_lock(&mutex_);
+    returnedValues_.push_back(v);
+    pthread_mutex_unlock(&mutex_);
+  };
+
+  return shared_ptr<LentMrbValue>(new LentMrbValue(value, callback));
 }

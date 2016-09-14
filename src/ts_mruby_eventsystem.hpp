@@ -20,7 +20,7 @@ void ts_mrb_eventsystem_class_init(mrb_state *mrb, struct RClass *rclass);
  */
 class EventSystemPlugin : public atscppapi::TransactionPlugin {
 private:
-  std::shared_ptr<TSMrubyValue> handler_obj_;
+  std::shared_ptr<LentMrbValue> handler_obj_;
   mrb_value callHandler_(std::shared_ptr<TSMrubyContext>, const std::string&);
 
 public:
@@ -34,7 +34,8 @@ public:
     // Should its handled in outer of this class?
     mrb_value v = mrb_obj_new(mrb, rclass, 0, nullptr);
 
-    handler_obj_ = std::shared_ptr<TSMrubyValue>(new TSMrubyValue(mrb, std::move(v)));
+    auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
+    handler_obj_ = tlmrb->getManager().lend_mrb_value(v);
   }
 
   void handleSendRequestHeaders(atscppapi::Transaction&);
