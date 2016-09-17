@@ -280,11 +280,15 @@ LendableMrbValueManager::lend_mrb_value(mrb_value value) {
   mrb_gc_register(mrb_, value);
 
   // Reserve unregister callback
-  auto callback = [this](mrb_value v) {
-    pthread_mutex_lock(&mutex_);
-    returnedValues_.push_back(v);
-    pthread_mutex_unlock(&mutex_);
-  };
+  using namespace std::placeholders;
+  auto callback = bind(&LendableMrbValueManager::disposal_callback, this, _1);
 
   return shared_ptr<LentMrbValue>(new LentMrbValue(value, callback));
+}
+
+void
+LendableMrbValueManager::disposal_callback(mrb_value value) {
+  pthread_mutex_lock(&mutex_);
+  returnedValues_.push_back(value);
+  pthread_mutex_unlock(&mutex_);
 }

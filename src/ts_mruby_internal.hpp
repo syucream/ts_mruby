@@ -44,6 +44,8 @@ get_authority_pair(const std::string &authority, bool is_tls = false);
 /**
  * Represent lent mrb_value from any thread-local mrb_state
  *
+ * NOTE I believe it can replace with shared_ptr with custom deleter.
+ *
  */
 class LentMrbValue {
 private:
@@ -91,6 +93,7 @@ public:
 
   // Generate thread-safe callback to return mrb_value
   std::shared_ptr<LentMrbValue> lend_mrb_value(mrb_value value);
+  void disposal_callback(mrb_value value);
 };
 
 namespace ts_mruby {
