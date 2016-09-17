@@ -7,6 +7,7 @@
 namespace ts_mruby {
 
 MrubyScriptsCache* getInitializedGlobalScriptCache(const std::string&) {}
+
 ThreadLocalMRubyStates *getThreadLocalMrubyStates() {}
 RProc* ThreadLocalMRubyStates::getRProc(const std::string &key) {}
 

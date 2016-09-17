@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 
@@ -53,36 +52,9 @@ vector<string> split(const string &str, char delimiter) {
 namespace ts_mruby {
 
 /*
- * mruby scripts cache
- */
-class MrubyScriptsCache {
-public:
-  MOCKABLE_ATTR
-  void store(const std::string &filepath) {
-    std::ifstream ifs(filepath);
-    const std::string code((std::istreambuf_iterator<char>(ifs)),
-                           std::istreambuf_iterator<char>());
-
-    scripts_.insert(make_pair(filepath, code));
-  }
-
-  MOCKABLE_ATTR
-  const std::string &load(const std::string &filepath) {
-    return scripts_[filepath];
-  }
-
-#ifdef MOCKING
-  using mock_type = class MrubyScriptsCacheMock;
-#endif // MOCKING
-
-private:
-  std::map<std::string, std::string> scripts_;
-};
-
-/*
  * Global mruby scripts cache
  */
-static MrubyScriptsCache *scriptsCache = NULL;
+static MrubyScriptsCache *scriptsCache = nullptr;
 MrubyScriptsCache* getInitializedGlobalScriptCache(const string& filepath) {
   if (!scriptsCache) {
     scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();

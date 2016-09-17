@@ -3,12 +3,12 @@
 
 #define MOCKING // switch to testing mode
 #include "../src/ts_mruby.cpp"
+#include "../src/utils.hpp"
 
-// XXX Currently it can't use
-// #include "libs/mocks.hpp"
+#include "libs/mocks.hpp"
 
 using testing::_;
-// using namespace ts_mruby::utils;
+using namespace ts_mruby::utils;
 
 namespace {
 
@@ -18,11 +18,9 @@ TEST(ThreadLocalMRubyStates, getMrb) {
   ThreadLocalMRubyStates state;
   EXPECT_NE(nullptr, state.getMrb());
 }
+*/
 
-// Reset global and thread-shared variables
-// FIXME It may exist a more better way than this, I believe ...
-void reset_global_shared() { scriptsCache = nullptr; }
-
+/*
 TEST(TSPluginInit, ts_mruby_main) {
   Singleton<MrubyScriptsCacheMock> singleton;
   singleton.create();
@@ -53,7 +51,8 @@ TEST(TSRemapNewInstance, ts_mruby_main) {
                                          const_cast<char *>(""), 0));
 
   singleton.destroy();
-  reset_global_shared();
+
+  // TODO reset global states
 }
 */
 
