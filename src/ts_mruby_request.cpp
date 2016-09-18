@@ -22,6 +22,8 @@ using std::string;
 
 const string CONTENT_TYPE_KEY = "Content-Type";
 
+namespace {
+
 static mrb_value ts_mrb_get_class_obj(mrb_state *mrb, mrb_value self,
                                       char *obj_id, char *class_name) {
   mrb_value obj;
@@ -51,6 +53,8 @@ static mrb_value ts_mrb_get_request_header(mrb_state *mrb, Headers &headers) {
     return mrb_nil_value();
   }
 }
+
+} // anonymous namespace
 
 static mrb_value ts_mrb_headers_in_obj(mrb_state *mrb, mrb_value self) {
   return ts_mrb_get_class_obj(mrb, self, (char *)"headers_in_obj",
@@ -259,6 +263,24 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
   return hash;
 }
 
+static mrb_value ts_mrb_get_request_headers_out(mrb_state *mrb, mrb_value self) {
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+
+  const TransactionStateTag current = context->getStateTag();
+  if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
+      current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    return self;
+  }
+
+  auto *transaction = context->getTransaction();
+  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+    transaction->getServerResponse().getHeaders(): 
+    transaction->getClientResponse().getHeaders();
+
+  return ts_mrb_get_request_header(mrb, headers);
+}
+
 static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
                                                 mrb_value self) {
   mrb_value key, val;
@@ -268,9 +290,25 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
   const string val_str(RSTRING_PTR(val), RSTRING_LEN(val));
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  context->registerHeaderRewritePlugin();
-  context->getHeaderRewritePlugin()->addRewriteRule(
-      key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+
+  const TransactionStateTag current = context->getStateTag();
+  switch(current) {
+  case TransactionStateTag::READ_REQUEST_HEADERS:
+    context->registerHeaderRewritePlugin();
+    context->getHeaderRewritePlugin()->addRewriteRule(
+        key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
+    break;
+  case TransactionStateTag::SEND_RESPONSE_HEADERS:
+    {
+      auto *transaction = context->getTransaction();
+      Headers &headers = transaction->getClientResponse().getHeaders();
+      headers.set(key_str, val_str);
+    }
+    break;
+  default:
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    break;
+  }
 
   return self;
 }
@@ -283,11 +321,59 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
   const string key(mkey, mlen);
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  context->registerHeaderRewritePlugin();
-  context->getHeaderRewritePlugin()->addRewriteRule(
-      key, "", HeaderRewritePlugin::Operator::DELETE);
+
+  const TransactionStateTag current = context->getStateTag();
+  switch(current) {
+  case TransactionStateTag::READ_REQUEST_HEADERS:
+    context->registerHeaderRewritePlugin();
+    context->getHeaderRewritePlugin()->addRewriteRule(
+        key, "", HeaderRewritePlugin::Operator::DELETE);
+    break;
+  case TransactionStateTag::SEND_RESPONSE_HEADERS:
+    {
+      auto *transaction = context->getTransaction();
+      Headers &headers = transaction->getClientResponse().getHeaders();
+      headers.erase(key);
+    }
+    break;
+  default:
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    break;
+  }
 
   return self;
+}
+
+static mrb_value ts_mrb_get_request_headers_out_hash(mrb_state *mrb,
+                                                    mrb_value self) {
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+
+  const TransactionStateTag current = context->getStateTag();
+  if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
+      current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
+    return self;
+  }
+
+  auto *transaction = context->getTransaction();
+  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+    transaction->getServerResponse().getHeaders(): 
+    transaction->getClientResponse().getHeaders();
+
+  mrb_value hash = mrb_hash_new(mrb);
+  const auto end = headers.end();
+  for (auto it = headers.begin(); it != end; it++) {
+    const string &headerName = (*it).name();
+    const string &headerValue = (*it).values();
+
+    const mrb_value key =
+        mrb_str_new(mrb, headerName.c_str(), headerName.length());
+    const mrb_value value =
+        mrb_str_new(mrb, headerValue.c_str(), headerValue.length());
+    mrb_hash_set(mrb, hash, key, value);
+  }
+
+  return hash;
 }
 
 void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
@@ -353,30 +439,29 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_request, "headers_in", ts_mrb_headers_in_obj,
                     MRB_ARGS_NONE());
 
-  // Request::headers_in
+  // Request::Headers_in
   class_headers_in =
       mrb_define_class_under(mrb, rclass, "Headers_in", mrb->object_class);
 
   mrb_define_method(mrb, class_headers_in, "[]", ts_mrb_get_request_headers_in,
-                    MRB_ARGS_ANY());
-  mrb_define_method(mrb, class_headers_in, "[]=", ts_mrb_set_request_headers_in,
                     MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, class_headers_in, "[]=", ts_mrb_set_request_headers_in,
+                    MRB_ARGS_REQ(2));
   mrb_define_method(mrb, class_headers_in, "delete",
                     ts_mrb_del_request_headers_in, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_headers_in, "all",
                     ts_mrb_get_request_headers_in_hash, MRB_ARGS_NONE());
 
-  // Request::headers_out
+  // Request::Headers_out
   class_headers_out =
       mrb_define_class_under(mrb, rclass, "Headers_out", mrb->object_class);
+  mrb_define_method(mrb, class_headers_out, "[]", ts_mrb_get_request_headers_out,
+                    MRB_ARGS_REQ(1));
   mrb_define_method(mrb, class_headers_out, "[]=",
-                    ts_mrb_set_request_headers_out, MRB_ARGS_ANY());
+                    ts_mrb_set_request_headers_out, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, class_headers_out, "delete",
                     ts_mrb_del_request_headers_out, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, class_headers_out, "all",
+                    ts_mrb_get_request_headers_out_hash, MRB_ARGS_NONE());
 
-  // Unsupported yet
-  // mrb_define_method(mrb, class_headers_out, "[]",
-  //                   ts_mrb_get_request_headers_out, MRB_ARGS_ANY());
-  // mrb_define_method(mrb, class_headers_out, "all",
-  //                   ts_mrb_get_request_headers_out_hash, MRB_ARGS_NONE());
 }

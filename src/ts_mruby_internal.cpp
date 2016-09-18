@@ -3,12 +3,16 @@
 //
 */
 
+#include "ts_mruby_init.hpp"
 #include "ts_mruby_internal.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <iostream>
 #include <sstream>
-#include <string>
 
+#include <mruby/compile.h>
 #include <mruby/string.h>
 #include <ts/ts.h>
 
@@ -16,6 +20,18 @@ using namespace std;
 using namespace atscppapi;
 
 namespace {
+
+// key specifying thread local data
+pthread_key_t threadKey = 0;
+
+// Initialize thread key when this plugin is loaded
+__attribute__((constructor)) void create_thread_keys() {
+  if (threadKey == 0) {
+    if (pthread_key_create(&threadKey, NULL) != 0) {
+      // XXX fatal error
+    }
+  }
+}
 
 vector<string> split(const string &str, char delimiter) {
   vector<string> splitted;
@@ -32,6 +48,68 @@ vector<string> split(const string &str, char delimiter) {
 }
 
 } // anonymous namespace
+
+namespace ts_mruby {
+
+/*
+ * Global mruby scripts cache
+ */
+static MrubyScriptsCache *scriptsCache = nullptr;
+MrubyScriptsCache* getInitializedGlobalScriptCache(const string& filepath) {
+  if (!scriptsCache) {
+    scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
+  }
+  scriptsCache->store(filepath);
+  
+  return scriptsCache;
+}
+
+ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
+  state_ = mrb_open();
+  ts_mrb_class_init(state_);
+  manager_.set_mrb_state(state_);
+}
+
+ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
+  mrb_close(state_);
+  state_ = nullptr;
+}
+
+RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
+  RProc *proc = procCache_[key];
+  if (!proc) {
+    const std::string &code = scriptsCache->load(key);
+
+    // compile
+    mrbc_context *context = mrbc_context_new(state_);
+    auto *st = mrb_parse_string(state_, code.c_str(), context);
+    proc = mrb_generate_code(state_, st);
+    mrb_pool_close(st->pool);
+
+    // store to cache
+    procCache_.insert(make_pair(key, proc));
+  }
+
+  // TODO move to other place?
+  manager_.cleanup_if_needed();
+
+  return proc;
+}
+
+// Note: Use pthread API's directly to have thread local parameters
+ThreadLocalMRubyStates *getThreadLocalMrubyStates() {
+  auto *state =
+      static_cast<ThreadLocalMRubyStates *>(pthread_getspecific(threadKey));
+
+  if (!state) {
+    state = new ThreadLocalMRubyStates();
+    if (pthread_setspecific(threadKey, state)) {
+      // XXX fatal error
+    }
+  }
+
+  return state;
+}
 
 bool judge_tls(const string &scheme) {
   if (scheme == "https") {
@@ -53,6 +131,8 @@ pair<string, uint16_t> get_authority_pair(const string &authority,
 
   return make_pair(splitted[0], port);
 }
+
+} // ts_mruby namespace
 
 void RputsPlugin::setStatusCode(int code) { status_code_ = code; }
 
@@ -144,4 +224,43 @@ void FilterPlugin::handleInputComplete() {
 
   produce(transformedBuffer_);
   setOutputComplete();
+}
+
+void LendableMrbValueManager::cleanup_if_needed() {
+  assert(mrb_ != nullptr);
+
+  // TODO double-checked locking? currently simply/unsafe pre-checking
+  if (returnedValues_.size() <= MAX_LENDABLE_VALUES / 2) return;
+
+  // TODO check current thread is owner of value_
+
+  pthread_mutex_lock(&mutex_);
+
+  for_each(returnedValues_.begin(), returnedValues_.end(), [this](mrb_value v) {
+    mrb_gc_unregister(mrb_, v);
+  });
+  returnedValues_.clear();
+
+  pthread_mutex_unlock(&mutex_);
+}
+
+shared_ptr<LentMrbValue>
+LendableMrbValueManager::lend_mrb_value(mrb_value value) {
+  assert(mrb_ != nullptr);
+
+  // Register value to avoid GC
+  mrb_gc_register(mrb_, value);
+
+  // Reserve unregister callback
+  using namespace std::placeholders;
+  auto callback = bind(&LendableMrbValueManager::disposal_callback, this, _1);
+
+  return shared_ptr<LentMrbValue>(new LentMrbValue(value, callback));
+}
+
+void
+LendableMrbValueManager::disposal_callback(mrb_value value) {
+  pthread_mutex_lock(&mutex_);
+  returnedValues_.push_back(value);
+  pthread_mutex_unlock(&mutex_);
 }

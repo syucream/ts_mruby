@@ -31,7 +31,7 @@ static mrb_value ts_mrb_set_server(mrb_state *mrb, mrb_value self) {
   auto *transaction = context->getTransaction();
 
   Url &url = transaction->getClientRequest().getUrl();
-  const auto authority = get_authority_pair(server, judge_tls(url.getScheme()));
+  const auto authority = ts_mruby::get_authority_pair(server, ts_mruby::judge_tls(url.getScheme()));
   url.setHost(authority.first);
   url.setPort(authority.second);
 

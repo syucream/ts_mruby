@@ -6,6 +6,7 @@
 #include "ts_mruby_init.hpp"
 #include "ts_mruby_connection.hpp"
 #include "ts_mruby_core.hpp"
+#include "ts_mruby_eventsystem.hpp"
 #include "ts_mruby_filter.hpp"
 #include "ts_mruby_records.hpp"
 #include "ts_mruby_request.hpp"
@@ -25,4 +26,5 @@ void ts_mrb_class_init(mrb_state *mrb) {
   ts_mrb_request_class_init(mrb, rclass);
   ts_mrb_upstream_class_init(mrb, rclass);
   ts_mrb_records_class_init(mrb, rclass);
+  ts_mrb_eventsystem_class_init(mrb, rclass);
 }
