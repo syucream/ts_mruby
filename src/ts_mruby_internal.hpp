@@ -37,11 +37,6 @@ const static char *TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 const int MAX_LENDABLE_VALUES = 128;
 
-bool judge_tls(const std::string &scheme);
-
-std::pair<std::string, uint16_t>
-get_authority_pair(const std::string &authority, bool is_tls = false);
-
 /**
  * Represent lent mrb_value from any thread-local mrb_state
  *
@@ -153,6 +148,17 @@ MrubyScriptsCache* getInitializedGlobalScriptCache(const std::string& filepath);
  * Getter for thread-local mrb_state*
  */
 ThreadLocalMRubyStates *getThreadLocalMrubyStates();
+
+/**
+ * Check the scheme is https or not
+ */
+bool judge_tls(const std::string &scheme);
+
+/**
+ * get separated hostname/port from authority string
+ */
+std::pair<std::string, uint16_t>
+get_authority_pair(const std::string &authority, bool is_tls = false);
 
 } // ts_mruby namespace
 

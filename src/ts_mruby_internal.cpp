@@ -72,7 +72,7 @@ ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
 
 ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
   mrb_close(state_);
-  state_ = NULL;
+  state_ = nullptr;
 }
 
 RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
@@ -111,8 +111,6 @@ ThreadLocalMRubyStates *getThreadLocalMrubyStates() {
   return state;
 }
 
-} // ts_mruby namespace
-
 bool judge_tls(const string &scheme) {
   if (scheme == "https") {
     return true;
@@ -133,6 +131,8 @@ pair<string, uint16_t> get_authority_pair(const string &authority,
 
   return make_pair(splitted[0], port);
 }
+
+} // ts_mruby namespace
 
 void RputsPlugin::setStatusCode(int code) { status_code_ = code; }
 
