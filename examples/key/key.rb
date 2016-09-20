@@ -14,9 +14,11 @@ def parse_key(key)
 
     parameters = []
     params[1..params.length].each do |param|
-      if param =~ / *(.+) *= *(.+) */
-        parameters.push($1.downcase => $2)
-      end
+      pair = param.split('=')
+      next if pair.length != 2
+      pk = pair[0].gsub(' ', '').downcase
+      pv = pair[1].gsub(' ', '')
+      parameters.push(pk => pv)
     end
 
     parsed[field_name.downcase] = parameters
@@ -82,24 +84,32 @@ end
 # p calculate_key(headers, k2_params)
 
 # TODO Enable to get full URL
-# req = ATS::Request.new
-# path = req.uri + req.args
-url = 'http://127.0.0.1:8080/'
+req = ATS::Request.new
+url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
 
 redis = Redis.new '127.0.0.1', 6789
 key = redis.hget url, 'key'
-k_params = parse_key(key)
-sec_key = calculate_key(headers, k_params)
+p key
 
-sec_genid = redis.hget url, sec_key
-if sec_genid.nil?
-  # TODO implement to mruby-redis
-  # max_genid = redis.hincrby url, 'max-genid', 1
-  sec_genid = '1'
-  redis.hset url, sec_key, sec_genid
+if !key.nil?
+  k_params = parse_key(key)
+  sec_key = calculate_key(headers, k_params)
+
+  # 1. get genid related to the secondary cache key
+  sec_genid = redis.hget url, sec_key
+  if sec_genid.nil?
+    # 2. get a new genid
+    max_genid = redis.hincrby url, 'max-genid', 1
+
+    # 3. related the genid to the cache key
+    redis.hset url, sec_key, max_genid.to_s
+
+    sec_genid = max_genid.to_s
+  end
+  # TODO 1. - 3. need transaction!
+  p sec_genid
+
+  # Set secondary cache key by using cache generation
+  records = ATS::Records.new
+  records.set TS_CONFIG_HTTP_CACHE_GENERATION, sec_genid.to_i
 end
-p sec_genid
-
-# Set secondary cache key by using cache generation
-records = ATS::Records.new
-records.set TS_CONFIG_HTTP_CACHE_GENERATION, sec_genid.to_i

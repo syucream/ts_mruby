@@ -97,6 +97,15 @@ static mrb_value ts_mrb_set_content_type(mrb_state *mrb, mrb_value self) {
   return self;
 }
 
+static mrb_value ts_mrb_get_hostname(mrb_state *mrb, mrb_value self) {
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->getTransaction();
+  const Url &url = transaction->getClientRequest().getUrl();
+
+  const string &hostname = url.getHost();
+  return mrb_str_new(mrb, hostname.c_str(), hostname.length());
+}
+
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->getTransaction();
@@ -398,6 +407,8 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "content_type=",
                     ts_mrb_set_content_type, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, class_request, "hostname",
+                    ts_mrb_get_hostname, MRB_ARGS_NONE());
 
   // XXX Unsupported: ATS doesn't support API's that overwrite request line
   // mrb_define_method(mrb, class_request, "request_line",
