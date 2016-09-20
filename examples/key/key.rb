@@ -76,13 +76,6 @@ headers = headers_tmp.reduce({}) do |memo, pair|
   memo
 end
 
-# k1 = 'user-agent;substr=MSIE'
-# k1_params = parse_key(k1)
-# p calculate_key(headers, k1_params)
-# k2 = 'user-agent;substr=MSIE;Substr="mobile", Cookie;param="ID"'
-# k2_params = parse_key(k2)
-# p calculate_key(headers, k2_params)
-
 # TODO Enable to get full URL
 req = ATS::Request.new
 url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
@@ -111,5 +104,30 @@ if !key.nil?
 
   # Set secondary cache key by using cache generation
   records = ATS::Records.new
-  records.set TS_CONFIG_HTTP_CACHE_GENERATION, sec_genid.to_i
+  records.set ATS::Records::TS_CONFIG_HTTP_CACHE_GENERATION, sec_genid.to_i
 end
+
+#
+# Register 'Key' header field value on read_response_hdr hook
+#
+class KeyHeaderHandler
+  def on_send_request_hdr; end
+
+  def on_read_response_hdr
+    hout = ATS::Headers_out.new
+    key = hout['key']
+
+    if key
+      req = ATS::Request.new
+      url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
+
+      redis = Redis.new '127.0.0.1', 6789
+      # TODO I should replace with hsetnx ...
+      redis.hset url, 'key', key unless redis.hexists? url, 'key'
+    end
+  end
+
+  def on_send_response_hdr; end
+end
+es = ATS::EventSystem.new
+es.register KeyHeaderHandler
