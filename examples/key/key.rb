@@ -1,52 +1,47 @@
+# 2.2.2. Failing Parameter Processing
+class FailingParameterProcessing < StandardError; end
+
 # 2.2. Calculating a Secondary Cache Key
-# Its parsing part.
-def parse_key(key)
+# TODO consider to quoted values
+def calculate_key(key_value, headers)
   # 4)
-  key_values = key.split(',')
+  key_list = key_value.split(',')
 
   # 5)
-  parsed = {}
-  key_values.map do |key_value|
-    params = key_value.split(';')
-    next if params.length <= 1
+  seckey = key_list.map do |key_item|
+    # 5-2)
+    fname_index = key_item.index(';')
+    raise FailingParameterProcessing if fname_index.nil?
 
-    field_name = params[0].gsub(' ', '')
+    # 5-3)
+    field_name = key_item[0...fname_index]
 
-    parameters = []
-    params[1..params.length].each do |param|
-      pair = param.split('=')
+    # 5-4)
+    field_value = headers[field_name]
+
+    # 5-5)
+    parameters = key_item[fname_index+1..key_item.length]
+
+    # 5-6) NOTE excepting ";" characters within quoted strings
+    param_list = parameters.split(';')
+
+    # 5-7)
+    param_list.map do |parameter|
+      pair = parameter.split('=')
       next if pair.length != 2
-      pk = pair[0].gsub(' ', '').downcase
-      pv = pair[1].gsub(' ', '')
-      parameters.push(pk => pv)
-    end
-
-    parsed[field_name.downcase] = parameters
+      param_name = pair[0].gsub(' ', '').downcase
+      param_value = pair[1].gsub(' ', '')
+      
+      calculate_each_(param_name, param_value, field_value)
+    end.join('')
   end
-
-  parsed
+  
+  # Append a separator character (e.g., NULL)
+  seckey.join("\000")
 end
 
-# 2.2. Calculating a Secondary Cache Key
-# Its calculating part.
-def calculate_key(headers, parsed_list)
-  secondary_key = ''
-
-  parsed_list.each do |field_name, parameters|
-    value = headers[field_name]
-    value = '' if value.nil?
-
-    key_tmp = ''
-    parameters.each do |param|
-      key_tmp += calculate_each_(value, param)
-    end
-    secondary_key += key_tmp
-  end
-
-  secondary_key
-end
-
-def calculate_each_(value, param)
+# 2.3. Key Parameters
+def calculate_each_(param_name, param_value, field_value)
   key_tmp = ''
 
   # TODO 2.3.1. div
@@ -54,9 +49,9 @@ def calculate_each_(value, param)
   # TODO 2.3.3. match
 
   # 2.3.4. substr
-  if param.has_key?('substr')
-    if !value.empty?
-      key_tmp = value.include?(param['substr']) ? '1' : '0'
+  if param_name
+    if !field_value.empty?
+      key_tmp = field_value.include?(param_value) ? '1' : '0'
     else
       key_tmp = 'none'
     end
@@ -64,42 +59,45 @@ def calculate_each_(value, param)
 
   # TODO 2.3.5. param
 
-  # Append a separator character (e.g., NULL)
-  key_tmp + "\000"
+  key_tmp
 end
 
-
-hin = ATS::Headers_in.new
-headers_tmp = hin.all
-headers = headers_tmp.reduce({}) do |memo, pair| 
-  memo[pair.first.downcase] = pair[1]
-  memo
+# Get request headers converted to lower case
+def get_headers
+  hin = ATS::Headers_in.new
+  hin.all.reduce({}) do |memo, pair| 
+    memo[pair.first.downcase] = pair[1]
+    memo
+  end
 end
 
 # TODO Enable to get full URL
 req = ATS::Request.new
 url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
-
 redis = Redis.new '127.0.0.1', 6789
-key = redis.hget url, 'key'
-p key
+key_value = redis.hget url, 'key'
+p key_value
 
-if !key.nil?
-  k_params = parse_key(key)
-  sec_key = calculate_key(headers, k_params)
+if !key_value.nil?
+  seckey = ''
+  begin
+    seckey = calculate_key(key_value, get_headers())
+  rescue FailingParameterProcessing
+    # 2.2.2. Failing Parameter Processing
+    # behave as if the Key header was not present ...
+    return
+  end
+  p seckey
 
   # 1. get genid related to the secondary cache key
-  sec_genid = redis.hget url, sec_key
+  # TODO These need transaction!
+  sec_genid = redis.hget url, seckey
   if sec_genid.nil?
-    # 2. get a new genid
     max_genid = redis.hincrby url, 'max-genid', 1
-
-    # 3. related the genid to the cache key
-    redis.hset url, sec_key, max_genid.to_s
+    redis.hset url, seckey, max_genid.to_s
 
     sec_genid = max_genid.to_s
   end
-  # TODO 1. - 3. need transaction!
   p sec_genid
 
   # Set secondary cache key by using cache generation
@@ -109,6 +107,7 @@ end
 
 #
 # Register 'Key' header field value on read_response_hdr hook
+# TODO I should replace hset with hsetnx ...
 #
 class KeyHeaderHandler
   def on_send_request_hdr; end
@@ -122,7 +121,6 @@ class KeyHeaderHandler
       url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
 
       redis = Redis.new '127.0.0.1', 6789
-      # TODO I should replace with hsetnx ...
       redis.hset url, 'key', key unless redis.hexists? url, 'key'
     end
   end
