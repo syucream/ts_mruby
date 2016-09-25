@@ -5,7 +5,8 @@ end
 FactoryGirl.define do
   factory :request do
     keyhash = {
-      'ATS::Request#hostname' => 'hostname'
+      'ATS::Request#hostname' => 'hostname',
+      'ATS::Request#url' => 'url'
     }
 
     path '/ats_request'
