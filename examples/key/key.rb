@@ -2,7 +2,6 @@
 class FailingParameterProcessing < StandardError; end
 
 # 2.2. Calculating a Secondary Cache Key
-# TODO consider to quoted values
 def calculate_key(key_value, headers)
   # 4)
   key_list = key_value.split(',')
@@ -22,8 +21,18 @@ def calculate_key(key_value, headers)
     # 5-5)
     parameters = key_item[fname_index+1..key_item.length]
 
-    # 5-6) NOTE excepting ";" characters within quoted strings
-    param_list = parameters.split(';')
+    # 5-6)
+    pi = 0; ci = 0
+    param_list = []
+    while ci = parameters.index(';', ci); !ci.nil?
+      # excepting ";" characters within quoted strings
+      if ci < parameters.length && parameters[ci-1] == '\"' && parameters[ci+1] = '\"'
+        next
+      end
+      param_list.push(parameters[pi..ci])
+      pi = ci + 1
+    end
+    param_list.push(parameters[pi..parameters.length-1])
 
     # 5-7)
     param_list.map do |parameter|
@@ -31,7 +40,13 @@ def calculate_key(key_value, headers)
       next if pair.length != 2
       param_name = pair[0].gsub(' ', '').downcase
       param_value = pair[1].gsub(' ', '')
-      
+
+      # If the first and last characters of "param_value" are both DQUOTE:
+      if param_value[0] == '"' && param_value[param_value.length-1] == '"'
+        param_value[0] = '\\'
+        param_value.chop!
+      end
+
       calculate_each_(param_name, param_value, field_value)
     end.join('')
   end
