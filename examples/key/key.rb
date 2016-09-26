@@ -16,7 +16,9 @@ def calculate_key(key_value, headers)
     field_name = key_item[0...fname_index].gsub(/^\s*(.+)\s*$/){$1}
 
     # 5-4)
-    field_value = headers[field_name]
+    # XXX Alternatively call below gsub to avoid ATS bug.
+    field_value = headers[field_name].gsub(/^(.*)\"(.+)$/){$1 + '"' + $2 + '"'}
+    field_value = '' if field_value.nil?
 
     # 5-5)
     parameters = key_item[fname_index+1..key_item.length].gsub(/^\s*(.+)\s*$/){$1}
@@ -29,9 +31,9 @@ def calculate_key(key_value, headers)
       pair = parameter.gsub(/^\s*(.+)\s*$/){$1}.split('=')
       next if pair.length != 2
       param_name = pair[0].downcase
-      # param_value = pair[1].gsub(/^\"(.+)\"$/){ $1 }
-      # XXX Alternatively process to avoid ATS bug.
-      param_value = pair[1].gsub(/^\"(.+)$/){ $1 }
+      # param_value = pair[1].gsub(/^\"(.+)\"$/){$1}
+      # XXX Alternatively call below gsub to avoid ATS bug.
+      param_value = pair[1].gsub(/^\"(.+)$/){$1}
 
       calculate_keyparam_(param_name, param_value, field_value)
     end.join('')
@@ -89,7 +91,7 @@ def calculate_keyparam_(param_name, param_value, field_value)
     header_list = []
     field_value.split(',').each do |header_item_tmp1|
       header_item_tmp1.split(';').each do |header_item_tmp2|
-        header_list.push(header_item_tmp2.gsub(/^\s(.+)\s$/){$1})
+        header_list.push(header_item_tmp2.gsub(/^\s*(.+)\s*$/){$1})
       end
     end
     header_list.each do |header_item|
@@ -118,7 +120,7 @@ req = ATS::Request.new
 url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
 redis = Redis.new '127.0.0.1', 6789
 key_value = redis.hget url, 'key'
-p key_value
+puts "Key header field value: #{key_value}"
 
 if !key_value.nil?
   seckey = ''
@@ -129,7 +131,7 @@ if !key_value.nil?
     # behave as if the Key header was not present ...
     return
   end
-  p seckey
+  puts "Secondary cache key: #{seckey}"
 
   # 1. get genid related to the secondary cache key
   # NOTE: Do hsetnx with '-1' to detect weather the seckey is already set
@@ -141,7 +143,7 @@ if !key_value.nil?
   else
     genid = redis.hget url, seckey
   end
-  p genid
+  puts "Genid: #{genid}"
 
   # Set secondary cache key by using cache generation
   records = ATS::Records.new
