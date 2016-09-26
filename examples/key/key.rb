@@ -29,7 +29,9 @@ def calculate_key(key_value, headers)
       pair = parameter.gsub(/^\s*(.+)\s*$/){$1}.split('=')
       next if pair.length != 2
       param_name = pair[0].downcase
-      param_value = pair[1].gsub(/^\"(.+)\"$/){ '\\' + $1 }
+      # param_value = pair[1].gsub(/^\"(.+)\"$/){ $1 }
+      # XXX Alternatively process to avoid ATS bug.
+      param_value = pair[1].gsub(/^\"(.+)$/){ $1 }
 
       calculate_keyparam_(param_name, param_value, field_value)
     end.join('')
@@ -112,7 +114,6 @@ def get_headers
   end
 end
 
-# TODO Enable to get full URL
 req = ATS::Request.new
 url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
 redis = Redis.new '127.0.0.1', 6789
@@ -131,24 +132,24 @@ if !key_value.nil?
   p seckey
 
   # 1. get genid related to the secondary cache key
-  # TODO These need transaction!
-  sec_genid = redis.hget url, seckey
-  if sec_genid.nil?
+  # NOTE: Do hsetnx with '-1' to detect weather the seckey is already set
+  genid = ''
+  if redis.hsetnx url, seckey, '-1'
     max_genid = redis.hincrby url, 'max-genid', 1
     redis.hset url, seckey, max_genid.to_s
-
-    sec_genid = max_genid.to_s
+    genid = max_genid.to_s
+  else
+    genid = redis.hget url, seckey
   end
-  p sec_genid
+  p genid
 
   # Set secondary cache key by using cache generation
   records = ATS::Records.new
-  records.set ATS::Records::TS_CONFIG_HTTP_CACHE_GENERATION, sec_genid.to_i
+  records.set ATS::Records::TS_CONFIG_HTTP_CACHE_GENERATION, genid.to_i
 end
 
 #
 # Register 'Key' header field value on read_response_hdr hook
-# TODO I should replace hset with hsetnx ...
 #
 class KeyHeaderHandler
   def on_send_request_hdr; end
@@ -162,7 +163,7 @@ class KeyHeaderHandler
       url = "#{req.scheme}://#{req.hostname}#{req.uri}#{req.args}"
 
       redis = Redis.new '127.0.0.1', 6789
-      redis.hset url, 'key', key unless redis.hexists? url, 'key'
+      redis.hsetnx url, 'key', key
     end
   end
 
