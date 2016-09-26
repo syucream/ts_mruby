@@ -106,6 +106,14 @@ static mrb_value ts_mrb_get_hostname(mrb_state *mrb, mrb_value self) {
   return mrb_str_new(mrb, hostname.c_str(), hostname.length());
 }
 
+static mrb_value ts_mrb_get_request_url(mrb_state *mrb, mrb_value self) {
+  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = context->getTransaction();
+
+  const string& url = transaction->getClientRequest().getUrl().getUrlString();
+  return mrb_str_new(mrb, url.c_str(), url.length());
+}
+
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
   Transaction *transaction = context->getTransaction();
@@ -416,6 +424,8 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   // mrb_define_method(mrb, class_request, "request_line=",
   //                   ts_mrb_set_request_request_line, MRB_ARGS_ANY());
 
+  mrb_define_method(mrb, class_request, "url", ts_mrb_get_request_url,
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "uri", ts_mrb_get_request_uri,
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, class_request, "uri=", ts_mrb_set_request_uri,
