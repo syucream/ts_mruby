@@ -83,8 +83,8 @@ class KeyProcessor
         param_value = pair[1].gsub(/^\"(.+)$/){$1}
 
         calculate_keyparam_(param_name, param_value, field_value)
-      end.join("\000") # Append a separator character (e.g., NULL)
-    end.join('')
+      end.join("\000")
+    end.join("\000")
   end
 
   # 2.3. Key Parameters
