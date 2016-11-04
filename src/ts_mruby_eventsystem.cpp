@@ -19,11 +19,6 @@
 using namespace std;
 using namespace atscppapi;
 
-// TODO Support some aliases ... ?
-static const string SEND_REQUEST_HDR_HANDLER  = "on_send_request_hdr";
-static const string READ_RESPONSE_HDR_HANDLER = "on_read_response_hdr";
-static const string SEND_RESPONSE_HDR_HANDLER = "on_send_response_hdr";
-
 void
 EventSystemPlugin::handleSendRequestHeaders(Transaction& transaction) {
   auto context = shared_ptr<TSMrubyContext>(new TSMrubyContext());
