@@ -7,10 +7,9 @@ SUBDIRS = test
 TARGET = ts_mruby.so
 SOURCES = src/ts_mruby_*.cpp src/ts_mruby.cpp
 
-
 # support mrbgems
 MRUBY_MAK_FILE = $(MRUBY_ROOT)/build/host/lib/libmruby.flags.mak
-include $(MRUBY_MAK_FILE)
+-include $(MRUBY_MAK_FILE)
 
 # configure settings related to ATS and mruby
 CPPFLAGS += -I$(TS_PREFIX_ROOT)/include -I$(MRUBY_ROOT)/include
