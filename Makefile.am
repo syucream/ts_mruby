@@ -25,9 +25,8 @@ ts_mruby.so:
 install:
 	$(TS_PREFIX_ROOT)bin/tsxs -i -o $(TARGET)
 
-# build mruby
 build_mruby:
-	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
+	MRUBY_CONFIG=./build_config.rb $(MRUBY_ROOT)/minirake -f $(MRUBY_ROOT)/Rakefile
 
 test:
 	./test/ts_mruby_test
