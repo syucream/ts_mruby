@@ -6,6 +6,7 @@
 #include "ts_mruby_request.hpp"
 #include "ts_mruby_internal.hpp"
 
+#include <ts/ts.h>
 #include <atscppapi/Transaction.h>
 
 #include <mruby.h>
@@ -180,6 +181,25 @@ static mrb_value ts_mrb_get_request_method(mrb_state *mrb, mrb_value self) {
   const string &method = HTTP_METHOD_STRINGS[methodIndex];
 
   return mrb_str_new(mrb, method.c_str(), method.length());
+}
+
+static mrb_value ts_mrb_set_request_method(mrb_state *mrb, mrb_value self) {
+  char *m_method;
+  mrb_int mlen;
+  mrb_get_args(mrb, "s", &m_method, &mlen);
+  const string method(m_method, mlen);
+
+  auto *ctx = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  Transaction *transaction = ctx->getTransaction();
+
+  // NOTE: The CPPAPI doesn't have a setter for method, so alternatively use TS API.
+  auto ts_txn = reinterpret_cast<TSHttpTxn>(transaction->getAtsHandle());
+  TSMBuffer hdr_buf;
+  TSMLoc hdr_loc;
+  TSHttpTxnClientReqGet(ts_txn, &hdr_buf, &hdr_loc);
+  TSHttpHdrMethodSet(hdr_buf, hdr_loc, method.c_str(), method.length());
+
+  return self;
 }
 
 static mrb_value ts_mrb_get_request_protocol(mrb_state *mrb, mrb_value self) {
@@ -437,9 +457,8 @@ void ts_mrb_request_class_init(mrb_state *mrb, struct RClass *rclass) {
   mrb_define_method(mrb, class_request, "method", ts_mrb_get_request_method,
                     MRB_ARGS_NONE());
 
-  // XXX Unsupported: atscppapi doesn't support overwriting method
-  // mrb_define_method(mrb, class_request, "method=", ts_mrb_set_request_method,
-  //                   MRB_ARGS_ANY());
+  mrb_define_method(mrb, class_request, "method=", ts_mrb_set_request_method,
+                    MRB_ARGS_REQ(1));
 
   mrb_define_method(mrb, class_request, "protocol", ts_mrb_get_request_protocol,
                     MRB_ARGS_NONE());
