@@ -5,5 +5,12 @@ include FactoryGirlHelper
 puts <<EOS
 template = "#{get(:request).template}"
 req = ATS::Request.new
-ATS::echo template % {hostname: req.hostname, url: req.url}
+ATS::echo template % {
+  args: req.args,
+  hostname: req.hostname,
+  protocol: req.protocol,
+  scheme: req.scheme,
+  unparsed_uri: req.unparsed_uri,
+  url: req.url,
+}
 EOS
