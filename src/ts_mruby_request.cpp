@@ -328,23 +328,15 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
 
-  const TransactionStateTag current = context->getStateTag();
-  switch(current) {
-  case TransactionStateTag::READ_REQUEST_HEADERS:
+  const auto current = context->getStateTag();
+  if (current == TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    auto *transaction = context->getTransaction();
+    auto &headers = transaction->getClientResponse().getHeaders();
+    headers.set(key_str, val_str);
+  } else {
     context->registerHeaderRewritePlugin();
     context->getHeaderRewritePlugin()->addRewriteRule(
         key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
-    break;
-  case TransactionStateTag::SEND_RESPONSE_HEADERS:
-    {
-      auto *transaction = context->getTransaction();
-      Headers &headers = transaction->getClientResponse().getHeaders();
-      headers.set(key_str, val_str);
-    }
-    break;
-  default:
-    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
-    break;
   }
 
   return self;
