@@ -8,15 +8,15 @@ FactoryGirl.define do
 
     send_request_hdr_hash = {
       'key' => 'x-on_send_request_hdr',
-      'value' => 1
+      'value' => '1'
     }
     read_response_hdr_hash = {
       'key' => 'x-on_read_response_hdr',
-      'value' => 2
+      'value' => '2'
     }
     send_response_hdr_hash = {
       'key' => 'x-on_send_response_hdr',
-      'value' => 3
+      'value' => '3'
     }
 
     send_request_hdr send_request_hdr_hash
