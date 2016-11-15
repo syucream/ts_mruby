@@ -7,14 +7,13 @@ SUBDIRS = test
 TARGET = ts_mruby.so
 SOURCES = src/ts_mruby_*.cpp src/ts_mruby.cpp
 
-
 # support mrbgems
 MRUBY_MAK_FILE = $(MRUBY_ROOT)/build/host/lib/libmruby.flags.mak
-include $(MRUBY_MAK_FILE)
+-include $(MRUBY_MAK_FILE)
 
 # configure settings related to ATS and mruby
-CPPFLAGS += -I$(TS_PREFIX_ROOT)include -I$(MRUBY_ROOT)include
-LDFLAGS  += -L$(TS_PREFIX_ROOT)lib $(MRUBY_LDFLAGS)
+CPPFLAGS += -I$(TS_PREFIX_ROOT)/include -I$(MRUBY_ROOT)/include
+LDFLAGS  += -L$(TS_PREFIX_ROOT)/lib $(MRUBY_LDFLAGS)
 LIBS     =  -latscppapi $(MRUBY_LIBS)
 
 
@@ -26,9 +25,8 @@ ts_mruby.so:
 install:
 	$(TS_PREFIX_ROOT)bin/tsxs -i -o $(TARGET)
 
-# build mruby
 build_mruby:
-	cp build_config.rb $(MRUBY_ROOT)/build_config.rb && cd $(MRUBY_ROOT) && ./minirake && cd $(MRUBY_ROOT) && git checkout build_config.rb
+	MRUBY_CONFIG=./build_config.rb $(MRUBY_ROOT)/minirake -f $(MRUBY_ROOT)/Rakefile
 
 test:
 	./test/ts_mruby_test

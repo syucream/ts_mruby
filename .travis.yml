@@ -1,4 +1,5 @@
 language: cpp
+sudo: required
 dist: trusty
 compiler:
   - gcc
@@ -13,26 +14,21 @@ before_script:
   - echo '-------------------------------'
   - echo 'Build and install TrafficServer'
   - echo '-------------------------------'
-  - wget -O trafficserver-6.1.1.tar.gz https://github.com/apache/trafficserver/archive/6.1.1.tar.gz
-  - tar xf trafficserver-6.1.1.tar.gz
-  - cd trafficserver-6.1.1
+  - wget -O trafficserver-7.0.0.tar.bz2 http://ftp.jaist.ac.jp/pub/apache/trafficserver/trafficserver-7.0.0.tar.bz2
+  - tar xf trafficserver-7.0.0.tar.bz2
+  - cd trafficserver-7.0.0
   - autoreconf -if
-  - ./configure --enable-cppapi --disable-tests
+  - ./configure --disable-tests
   - make -j2
   - sudo make install
-  - sudo cp lib/ink_autoconf.h /usr/local/include/ # ugly hack! related to TS-2794, TS-3427 ...
-  - cd ../
-  - echo '-------------------------------'
-  - echo 'Build mruby'
-  - echo '-------------------------------'
-  - wget -O mruby-1.2.0.zip https://github.com/mruby/mruby/archive/1.2.0.zip
-  - unzip mruby-1.2.0.zip
-  - cd mruby-1.2.0
-  - CFLAGS="-fPIC" ./minirake
   - cd ../
 script:
   - autoreconf -if
-  - ./configure --enable-coverage --with-ts-prefix-root=/usr/local/ --with-mruby-root=$TRAVIS_BUILD_DIR/mruby-1.2.0/
+  - ./configure --enable-coverage --with-ts-prefix-root=/usr/local/
+  - echo '-------------------------------'
+  - echo 'Build mruby'
+  - echo '-------------------------------'
+  - CFLAGS="-fPIC" make build_mruby
   - echo '-------------------------------'
   - echo 'Build ts_mruby'
   - echo '-------------------------------'

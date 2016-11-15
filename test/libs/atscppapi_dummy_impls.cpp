@@ -10,16 +10,17 @@
  */
 namespace atscppapi {
 
-RemapPlugin::RemapPlugin(void**) {}
+RemapPlugin::RemapPlugin(void **) {}
 
 void Transaction::resume() {}
 
 void Transaction::setSkipRemapping(int) {}
 
 void GlobalPlugin::registerHook(Plugin::HookType) {}
-GlobalPlugin::GlobalPlugin(bool ignore_internal_transactions) {};
+GlobalPlugin::GlobalPlugin(bool ignore_internal_transactions){};
 GlobalPlugin::~GlobalPlugin() {}
 
-void RegisterGlobalPlugin(std::string name, std::string vendor, std::string email) {}
+void RegisterGlobalPlugin(std::string name, std::string vendor,
+                          std::string email) {}
 
 }; // namespace atscppapi

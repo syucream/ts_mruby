@@ -2,6 +2,7 @@ require "bundler/setup"
 require 'capybara/mechanize'
 require 'capybara/rspec'
 require 'factory_girl'
+require './support/factory_girl_helper'
 require 'rspec'
 
 RSpec.configure do |config|
@@ -10,7 +11,7 @@ RSpec.configure do |config|
 
   config.include Capybara::DSL
 
-  config.include FactoryGirl::Syntax::Methods
+  config.include FactoryGirlHelper
   config.before(:suite) do
     FactoryGirl.definition_file_paths = %w(./factories/)
     FactoryGirl.find_definitions

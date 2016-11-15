@@ -3,150 +3,42 @@
 //
 */
 
+#include "ts_mruby_init.hpp"
 #include "ts_mruby_internal.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <iostream>
 #include <sstream>
-#include <string>
+
+#include <mruby/compile.h>
 #include <mruby/string.h>
+#include <ts/ts.h>
 
 using namespace std;
 using namespace atscppapi;
 
 namespace {
 
-// These status reasons are based on proxy/hdrs/HTTP.cc on trafficserver.
-// XXX Temporary fix. We should use this function from atscppapi.
-string http_status_reason_lookup(unsigned status) {
-  switch (status) {
-  case 0:
-    return "None";
-  case 100:
-    return "Continue";
-  case 101:
-    return "Switching Protocols";
-  case 102:
-    return "Processing";
-  case 200:
-    return "OK";
-  case 201:
-    return "Created";
-  case 202:
-    return "Accepted";
-  case 203:
-    return "Non - Authoritative Information";
-  case 204:
-    return "No Content";
-  case 205:
-    return "Reset Content";
-  case 206:
-    return "Partial Content";
-  case 207:
-    return "Multi - Status";
-  case 208:
-    return "Already Reported";
-  case 226:
-    return "IM Used";
-  case 300:
-    return "Multiple Choices";
-  case 301:
-    return "Moved Permanently";
-  case 302:
-    return "Found";
-  case 303:
-    return "See Other";
-  case 304:
-    return "Not Modified";
-  case 305:
-    return "Use Proxy";
-  case 307:
-    return "Temporary Redirect";
-  case 308:
-    return "Permanent Redirect";
-  case 400:
-    return "Bad Request";
-  case 401:
-    return "Unauthorized";
-  case 402:
-    return "Payment Required";
-  case 403:
-    return "Forbidden";
-  case 404:
-    return "Not Found";
-  case 405:
-    return "Method Not Allowed";
-  case 406:
-    return "Not Acceptable";
-  case 407:
-    return "Proxy Authentication Required";
-  case 408:
-    return "Request Timeout";
-  case 409:
-    return "Conflict";
-  case 410:
-    return "Gone";
-  case 411:
-    return "Length Required";
-  case 412:
-    return "Precondition Failed";
-  case 413:
-    return "Request Entity Too Large";
-  case 414:
-    return "Request - URI Too Long";
-  case 415:
-    return "Unsupported Media Type";
-  case 416:
-    return "Requested Range Not Satisfiable";
-  case 417:
-    return "Expectation Failed";
-  case 422:
-    return "Unprocessable Entity";
-  case 423:
-    return "Locked";
-  case 424:
-    return "Failed Dependency";
-  case 426:
-    return "Upgrade Required";
-  case 428:
-    return "Precondition Required";
-  case 429:
-    return "Too Many Requests";
-  case 431:
-    return "Request Header Fields Too Large";
-  case 500:
-    return "Internal Server Error";
-  case 501:
-    return "Not Implemented";
-  case 502:
-    return "Bad Gateway";
-  case 503:
-    return "Service Unavailable";
-  case 504:
-    return "Gateway Timeout";
-  case 505:
-    return "HTTP Version Not Supported";
-  case 506:
-    return "Variant Also Negotiates";
-  case 507:
-    return "Insufficient Storage";
-  case 508:
-    return "Loop Detected";
-  case 510:
-    return "Not Extended";
-  case 511:
-    return "Network Authentication Required";
-  default:
-    return "";
+// key specifying thread local data
+pthread_key_t threadKey = 0;
+
+// Initialize thread key when this plugin is loaded
+__attribute__((constructor)) void create_thread_keys() {
+  if (threadKey == 0) {
+    if (pthread_key_create(&threadKey, NULL) != 0) {
+      // XXX fatal error
+    }
   }
 }
 
-vector<string>
-split(const string& str, char delimiter) {
+vector<string> split(const string &str, char delimiter) {
   vector<string> splitted;
 
   string item;
   istringstream ss(str);
-  while(getline(ss, item, delimiter)) {
+  while (getline(ss, item, delimiter)) {
     if (!item.empty()) {
       splitted.push_back(item);
     }
@@ -157,17 +49,78 @@ split(const string& str, char delimiter) {
 
 } // anonymous namespace
 
-bool
-judge_tls(const string& scheme) {
+namespace ts_mruby {
+
+/*
+ * Global mruby scripts cache
+ */
+static MrubyScriptsCache *scriptsCache = nullptr;
+MrubyScriptsCache* getInitializedGlobalScriptCache(const string& filepath) {
+  if (!scriptsCache) {
+    scriptsCache = ts_mruby::utils::mockable_ptr<MrubyScriptsCache>();
+  }
+  scriptsCache->store(filepath);
+  
+  return scriptsCache;
+}
+
+ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
+  state_ = mrb_open();
+  ts_mrb_class_init(state_);
+  manager_.set_mrb_state(state_);
+}
+
+ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
+  mrb_close(state_);
+  state_ = nullptr;
+}
+
+RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
+  RProc *proc = procCache_[key];
+  if (!proc) {
+    const std::string &code = scriptsCache->load(key);
+
+    // compile
+    mrbc_context *context = mrbc_context_new(state_);
+    auto *st = mrb_parse_string(state_, code.c_str(), context);
+    proc = mrb_generate_code(state_, st);
+    mrb_pool_close(st->pool);
+
+    // store to cache
+    procCache_.insert(make_pair(key, proc));
+  }
+
+  // TODO move to other place?
+  manager_.cleanup_if_needed();
+
+  return proc;
+}
+
+// Note: Use pthread API's directly to have thread local parameters
+ThreadLocalMRubyStates *getThreadLocalMrubyStates() {
+  auto *state =
+      static_cast<ThreadLocalMRubyStates *>(pthread_getspecific(threadKey));
+
+  if (!state) {
+    state = new ThreadLocalMRubyStates();
+    if (pthread_setspecific(threadKey, state)) {
+      // XXX fatal error
+    }
+  }
+
+  return state;
+}
+
+bool judge_tls(const string &scheme) {
   if (scheme == "https") {
     return true;
   }
   return false;
 }
 
-pair<string, uint16_t>
-get_authority_pair(const string& authority, bool is_tls) {
-  const vector<string>& splitted = split(authority, ':');
+pair<string, uint16_t> get_authority_pair(const string &authority,
+                                          bool is_tls) {
+  const vector<string> &splitted = split(authority, ':');
 
   uint16_t port = 80;
   if (splitted.size() == 2) {
@@ -179,28 +132,31 @@ get_authority_pair(const string& authority, bool is_tls) {
   return make_pair(splitted[0], port);
 }
 
-void RputsPlugin::setStatusCode(int code) { _statusCode = code; }
+} // ts_mruby namespace
 
-void RputsPlugin::appendMessage(const string &msg) { _message += msg; }
+void RputsPlugin::setStatusCode(int code) { status_code_ = code; }
+
+void RputsPlugin::appendMessage(const string &msg) { message_ += msg; }
 
 void RputsPlugin::appendHeader(const pair<string, string> &entry) {
-  _headers.push_back(entry);
+  headers_.push_back(entry);
 }
 
-void RputsPlugin::appendHeaders(const HeaderVec &h) {
-  _headers.insert(_headers.end(), h.begin(), h.end());
+void RputsPlugin::appendHeaders(const vector<pair<string, string>> &h) {
+  headers_.insert(headers_.end(), h.begin(), h.end());
 }
 
 void RputsPlugin::handleInputComplete() {
-  string response("HTTP/1.1 " + std::to_string(_statusCode) + " " +
-                  http_status_reason_lookup(_statusCode) + "\r\n");
+  string response(
+      "HTTP/1.1 " + std::to_string(status_code_) + " " +
+      TSHttpHdrReasonLookup(static_cast<TSHttpStatus>(status_code_)) + "\r\n");
 
   // make response header
-  if (!_message.empty()) {
-    response += "Content-Length: " + std::to_string(_message.size()) + "\r\n";
+  if (!message_.empty()) {
+    response += "Content-Length: " + std::to_string(message_.size()) + "\r\n";
   }
 
-  for_each(_headers.begin(), _headers.end(),
+  for_each(headers_.begin(), headers_.end(),
            [&response](pair<string, string> entry) {
              response += entry.first + ": " + entry.second + "\r\n";
            });
@@ -208,7 +164,7 @@ void RputsPlugin::handleInputComplete() {
   // make response body
   response += "\r\n";
   produce(response);
-  response = _message + "\r\n";
+  response = message_ + "\r\n";
   produce(response);
   setOutputComplete();
 }
@@ -241,19 +197,70 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
-void FilterPlugin::appendBody(const string &data) { _transformedBuffer.append(data); }
+void FilterPlugin::appendBody(const string &data) {
+  transformedBuffer_.append(data);
+}
 
-void FilterPlugin::appendBlock(const mrb_value block) { _block = block; }
+void FilterPlugin::appendBlock(const mrb_value block) { block_ = block; }
 
-void FilterPlugin::consume(const std::string &data) { _origBuffer.append(data); }
+void FilterPlugin::consume(const std::string &data) {
+  origBuffer_.append(data);
+}
 
 void FilterPlugin::handleInputComplete() {
-  if (!mrb_nil_p(_block)) {
+  if (!mrb_nil_p(block_)) {
     mrb_state *state = mrb_open();
-    mrb_value rv = mrb_yield(state, _block, mrb_str_new(state, _origBuffer.c_str(), _origBuffer.length()));
-    _transformedBuffer = string(mrb_string_value_cstr(state, &rv));
+    mrb_value rv =
+        mrb_yield(state, block_, mrb_str_new(state, origBuffer_.c_str(),
+                                             origBuffer_.length()));
+
+    // Convert to_s if the value isn't Ruby string
+    if (mrb_type(rv) != MRB_TT_STRING) {
+      rv = mrb_funcall(state, rv, "to_s", 0, NULL);
+    }
+
+    transformedBuffer_ = string(RSTRING_PTR(rv), RSTRING_LEN(rv));
   }
 
-  produce(_transformedBuffer);
+  produce(transformedBuffer_);
   setOutputComplete();
+}
+
+void LendableMrbValueManager::cleanup_if_needed() {
+  assert(mrb_ != nullptr);
+
+  // TODO double-checked locking? currently simply/unsafe pre-checking
+  if (returnedValues_.size() <= MAX_LENDABLE_VALUES / 2) return;
+
+  // TODO check current thread is owner of value_
+
+  pthread_mutex_lock(&mutex_);
+
+  for_each(returnedValues_.begin(), returnedValues_.end(), [this](mrb_value v) {
+    mrb_gc_unregister(mrb_, v);
+  });
+  returnedValues_.clear();
+
+  pthread_mutex_unlock(&mutex_);
+}
+
+shared_ptr<LentMrbValue>
+LendableMrbValueManager::lend_mrb_value(mrb_value value) {
+  assert(mrb_ != nullptr);
+
+  // Register value to avoid GC
+  mrb_gc_register(mrb_, value);
+
+  // Reserve unregister callback
+  using namespace std::placeholders;
+  auto callback = bind(&LendableMrbValueManager::disposal_callback, this, _1);
+
+  return shared_ptr<LentMrbValue>(new LentMrbValue(value, callback));
+}
+
+void
+LendableMrbValueManager::disposal_callback(mrb_value value) {
+  pthread_mutex_lock(&mutex_);
+  returnedValues_.push_back(value);
+  pthread_mutex_unlock(&mutex_);
 }

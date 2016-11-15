@@ -89,4 +89,4 @@ gmock_main.a : gmock-all.o gtest-all.o gmock_main.o
 # function.
 
 ts_mruby_test : gmock_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(COVFLAGS) $(LDFLAGS) $(LIBS) -lpthread libs/atscppapi_dummy_impls.cpp $(USER_DIR)/*_test.cpp $(MRUBY_ROOT)/build/host/lib/libmruby.a $^ -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(COVFLAGS) $(LDFLAGS) $(LIBS) -lpthread libs/*.cpp $(USER_DIR)/*_test.cpp $(MRUBY_ROOT)/build/host/lib/libmruby.a $^ -o $@
