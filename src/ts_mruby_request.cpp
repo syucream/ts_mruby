@@ -303,7 +303,7 @@ static mrb_value ts_mrb_get_request_headers_in_hash(mrb_state *mrb,
 static mrb_value ts_mrb_get_request_headers_out(mrb_state *mrb, mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
 
-  const TransactionStateTag current = context->getStateTag();
+  const auto current = context->getStateTag();
   if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
       current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
@@ -311,7 +311,7 @@ static mrb_value ts_mrb_get_request_headers_out(mrb_state *mrb, mrb_value self) 
   }
 
   auto *transaction = context->getTransaction();
-  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+  auto &headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
     transaction->getServerResponse().getHeaders(): 
     transaction->getClientResponse().getHeaders();
 
@@ -328,23 +328,15 @@ static mrb_value ts_mrb_set_request_headers_out(mrb_state *mrb,
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
 
-  const TransactionStateTag current = context->getStateTag();
-  switch(current) {
-  case TransactionStateTag::READ_REQUEST_HEADERS:
+  const auto current = context->getStateTag();
+  if (current == TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    auto *transaction = context->getTransaction();
+    auto &headers = transaction->getClientResponse().getHeaders();
+    headers.set(key_str, val_str);
+  } else {
     context->registerHeaderRewritePlugin();
     context->getHeaderRewritePlugin()->addRewriteRule(
         key_str, val_str, HeaderRewritePlugin::Operator::ASSIGN);
-    break;
-  case TransactionStateTag::SEND_RESPONSE_HEADERS:
-    {
-      auto *transaction = context->getTransaction();
-      Headers &headers = transaction->getClientResponse().getHeaders();
-      headers.set(key_str, val_str);
-    }
-    break;
-  default:
-    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
-    break;
   }
 
   return self;
@@ -359,23 +351,15 @@ static mrb_value ts_mrb_del_request_headers_out(mrb_state *mrb,
 
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
 
-  const TransactionStateTag current = context->getStateTag();
-  switch(current) {
-  case TransactionStateTag::READ_REQUEST_HEADERS:
+  const auto current = context->getStateTag();
+  if (current == TransactionStateTag::SEND_RESPONSE_HEADERS) {
+    auto *transaction = context->getTransaction();
+    auto &headers = transaction->getClientResponse().getHeaders();
+    headers.erase(key);
+  } else {
     context->registerHeaderRewritePlugin();
     context->getHeaderRewritePlugin()->addRewriteRule(
         key, "", HeaderRewritePlugin::Operator::DELETE);
-    break;
-  case TransactionStateTag::SEND_RESPONSE_HEADERS:
-    {
-      auto *transaction = context->getTransaction();
-      Headers &headers = transaction->getClientResponse().getHeaders();
-      headers.erase(key);
-    }
-    break;
-  default:
-    mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
-    break;
   }
 
   return self;
@@ -385,7 +369,7 @@ static mrb_value ts_mrb_get_request_headers_out_hash(mrb_state *mrb,
                                                     mrb_value self) {
   auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
 
-  const TransactionStateTag current = context->getStateTag();
+  const auto current = context->getStateTag();
   if (current != TransactionStateTag::READ_RESPONSE_HEADERS &&
       current != TransactionStateTag::SEND_RESPONSE_HEADERS) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "Invalid event usage");
@@ -393,7 +377,7 @@ static mrb_value ts_mrb_get_request_headers_out_hash(mrb_state *mrb,
   }
 
   auto *transaction = context->getTransaction();
-  Headers& headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
+  auto &headers = (current == TransactionStateTag::READ_RESPONSE_HEADERS) ?
     transaction->getServerResponse().getHeaders(): 
     transaction->getClientResponse().getHeaders();
 
