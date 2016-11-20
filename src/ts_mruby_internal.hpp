@@ -231,7 +231,7 @@ class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
   std::string origBuffer_;
   std::string transformedBuffer_;
-  mrb_value block_;
+  std::shared_ptr<LentMrbValue> block_;
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
@@ -240,7 +240,6 @@ public:
 
     origBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
     transformedBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
-    block_ = mrb_nil_value();
   }
 
   void appendBody(const std::string &data);

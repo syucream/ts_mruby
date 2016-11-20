@@ -201,22 +201,27 @@ void FilterPlugin::appendBody(const string &data) {
   transformedBuffer_.append(data);
 }
 
-void FilterPlugin::appendBlock(const mrb_value block) { block_ = block; }
+void FilterPlugin::appendBlock(const mrb_value block) {
+  auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
+  block_ = tlmrb->getManager().lend_mrb_value(block);
+}
 
 void FilterPlugin::consume(const std::string &data) {
   origBuffer_.append(data);
 }
 
 void FilterPlugin::handleInputComplete() {
-  if (!mrb_nil_p(block_)) {
-    mrb_state *state = mrb_open();
+  if (block_.get() != nullptr && !mrb_nil_p(block_->getValue())) {
+    auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
+    mrb_state* mrb = tlmrb->getMrb();
+
     mrb_value rv =
-        mrb_yield(state, block_, mrb_str_new(state, origBuffer_.c_str(),
+        mrb_yield(mrb, block_->getValue(), mrb_str_new(mrb, origBuffer_.c_str(),
                                              origBuffer_.length()));
 
     // Convert to_s if the value isn't Ruby string
     if (mrb_type(rv) != MRB_TT_STRING) {
-      rv = mrb_funcall(state, rv, "to_s", 0, NULL);
+      rv = mrb_funcall(mrb, rv, "to_s", 0, NULL);
     }
 
     transformedBuffer_ = string(RSTRING_PTR(rv), RSTRING_LEN(rv));
