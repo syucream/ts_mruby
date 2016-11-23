@@ -15,7 +15,7 @@ class TsMruby < Formula
     depends_on "libtool"  => :build
   end
 
-  depends_on "trafficserver" => "7.0.0+"
+  depends_on "trafficserver"
   needs :cxx11
 
   def install
@@ -42,3 +42,4 @@ class TsMruby < Formula
   end
 
 end
+
