@@ -1,7 +1,7 @@
 class TsMruby < Formula
   desc "trafficserver's mruby extension"
   homepage "https://github.com/syucream/ts_mruby"
-  sha256 "19e85931acc4d4927ed53c5f6ac9df17d57f91ccc702dd629afa670c9569b7c6"
+  sha256 "7a0208e183fcbe1259dc3ced9c3b28da5a93bf912dfeddb200d39657c73d9ff9"
 
   bottle do
     cellar :any
@@ -15,10 +15,7 @@ class TsMruby < Formula
     depends_on "libtool"  => :build
   end
 
-  depends_on "trafficserver"
-  depends_on "trafficserver-atscppapi" => :optional
-  # depends_on "mruby"
-
+  depends_on "trafficserver" => "7.0.0+"
   needs :cxx11
 
   def install
@@ -28,7 +25,7 @@ class TsMruby < Formula
     ENV.enable_warnings
 
     # build mruby myself
-    system "git clone --depth 1 https://github.com/mruby/mruby.git"
+    system "git submodule init && git submodule update"
     system "cd mruby && CFLAGS=\"-fPIC\" ./minirake"
 
     mruby_root = Dir.pwd + '/mruby'
