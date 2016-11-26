@@ -25,16 +25,14 @@ FactoryGirl.define do
 
   factory :request_setters do
     keyhash = {
-      'ATS::Request#args'     => 'args',
-      'ATS::Request#hostname' => 'hostname',
-      'ATS::Request#protocol' => 'protocol',
-      'ATS::Request#scheme'   => 'scheme',
+      'ATS::Request#args'   => 'args',
+      'ATS::Request#uri'    => 'uri',
+      'ATS::Request#method' => 'method',
     }
     valuehash = {
-      'ATS::Request#args'     => 'field1=value11',
-      'ATS::Request#hostname' => 'example.com',
-      'ATS::Request#protocol' => 'http/1.0',
-      'ATS::Request#scheme'   => 'http',
+      'ATS::Request#args'   => 'field1=value11',
+      'ATS::Request#uri'    => '/test',
+      'ATS::Request#method' => 'DELETE',
     }
 
     path '/ats_request_setters'
