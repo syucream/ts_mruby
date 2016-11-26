@@ -116,21 +116,29 @@ static mrb_value ts_mrb_get_request_url(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value ts_mrb_get_request_uri(mrb_state *mrb, mrb_value self) {
-  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->getTransaction();
+  auto *ctx = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *transaction = ctx->getTransaction();
 
-  const string path = "/" + transaction->getClientRequest().getUrl().getPath();
-  return mrb_str_new(mrb, path.c_str(), path.length());
+  string uri = transaction->getClientRequest().getUrl().getPath();
+  if (uri.length() == 0 || uri.at(0) != '/') {
+    uri = '/' + uri;
+  }
+
+  return mrb_str_new(mrb, uri.c_str(), uri.length());
 }
 
 static mrb_value ts_mrb_set_request_uri(mrb_state *mrb, mrb_value self) {
   char *muri;
   mrb_int mlen;
   mrb_get_args(mrb, "s", &muri, &mlen);
-  const string uri(muri, mlen);
 
-  auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-  Transaction *transaction = context->getTransaction();
+  string uri(muri, mlen);
+  if (uri.length() == 0 || uri.at(0) != '/') {
+    uri = '/' + uri;
+  }
+
+  auto *ctx = reinterpret_cast<TSMrubyContext *>(mrb->ud);
+  auto *transaction = ctx->getTransaction();
   transaction->getClientRequest().getUrl().setPath(uri);
 
   return self;
