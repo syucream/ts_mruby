@@ -3,7 +3,7 @@ include FactoryGirlHelper
 
 # generate template
 puts <<EOS
-template = "#{get(:request).template}"
+template = "#{get(:request_getters).template}"
 req = ATS::Request.new
 ATS::echo template % {
   args: req.args,
