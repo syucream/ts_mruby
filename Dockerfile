@@ -44,12 +44,9 @@ RUN apt-get install -y nginx
 # Install packages required by trafficserver
 #
 RUN apt-get install -y             \
-            libmodule-install-perl \
             g++                    \
             libssl-dev             \
             tcl-dev                \
-            expat                  \
-            libexpat-dev           \
             libpcre3-dev
 
 RUN ldconfig
@@ -74,11 +71,11 @@ RUN cd openssl &&                                              \
 #
 # Build and install trafficserver
 #
-RUN git clone https://github.com/apache/trafficserver.git
-RUN cd trafficserver &&                                              \
-    autoreconf -if &&                                                \
-    ./configure --enable-debug --enable-cppapi &&                    \
-    make &&                                                          \
+RUN wget -O trafficserver-7.0.0.tar.bz2 http://ftp.meisei-u.ac.jp/mirror/apache/dist/trafficserver/trafficserver-7.0.0.tar.bz2
+RUN tar xf trafficserver-7.0.0.tar.bz2 && \
+    cd trafficserver-7.0.0 &&             \
+    ./configure --enable-debug  &&        \
+    make &&                               \
     make install
 
 RUN ldconfig
@@ -95,14 +92,6 @@ RUN echo "CONFIG proxy.config.http.server_ports STRING 8080 443:ssl" >> /usr/loc
 RUN echo "dest_ip=* ssl_cert_name=server.crt ssl_key_name=server.key" >> /usr/local/etc/trafficserver/ssl_multicert.config
 
 #
-# Build mruby
-#
-RUN wget -O mruby-1.2.0.zip https://github.com/mruby/mruby/archive/1.2.0.zip
-RUN unzip mruby-1.2.0.zip &&  \
-    cd mruby-1.2.0 &&         \
-    CFLAGS="-fPIC" ./minirake
-
-#
 # Build and install ts_mruby
 #
 RUN git clone https://github.com/syucream/ts_mruby.git
@@ -110,7 +99,8 @@ RUN cd ts_mruby &&                                                              
     git submodule init &&                                                                \
     git submodule update &&                                                              \
     autoreconf -if &&                                                                    \
-    ./configure --with-ts-prefix-root=/usr/local/ --with-mruby-root=/opt/mruby-1.2.0/ && \
+    ./configure --with-ts-prefix-root=/usr/local/  &&                                    \
+    make build_mruby &&                                                                  \
     make &&                                                                              \
     make install
 

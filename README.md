@@ -56,7 +56,7 @@ using Docker
 
 ```
 $ docker pull syucream/ts_mruby
-$ docker run docker run -it syucream/ts_mruby /bin/bash
+$ docker run -it syucream/ts_mruby /bin/bash
 root@ad7a82be8a65:/opt# trafficserver start
 root@ad7a82be8a65:/opt# curl http://localhost:8080/
 ts_mruby test
