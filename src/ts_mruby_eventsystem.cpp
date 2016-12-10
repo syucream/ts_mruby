@@ -13,11 +13,58 @@
 #include <mruby/class.h>
 #include <mruby/compile.h>
 #include <mruby/data.h>
+#include <mruby/dump.h>
 #include <mruby/proc.h>
 #include <mruby/variable.h>
 
 using namespace std;
 using namespace atscppapi;
+
+static const char* SEND_REQUEST_HDR_HANDLER  = "on_send_request_hdr";
+static const char* READ_RESPONSE_HDR_HANDLER = "on_read_response_hdr";
+static const char* SEND_RESPONSE_HDR_HANDLER = "on_send_response_hdr";
+
+EventSystemPlugin::EventSystemPlugin(atscppapi::Transaction &transaction, mrb_state* mrb, struct RClass* rclass)
+    : atscppapi::TransactionPlugin(transaction) {
+  
+  size_t binsize = 0;
+  if (mrb_obj_respond_to(mrb, rclass, mrb_intern_cstr(mrb, SEND_REQUEST_HDR_HANDLER))) {
+    registerHook(HOOK_SEND_REQUEST_HEADERS);
+    mrb_sym sym = mrb_intern_cstr(mrb, SEND_REQUEST_HDR_HANDLER);
+    RProc* rproc = mrb_method_search(mrb, rclass, sym);
+    mrb_dump_irep(mrb, rproc->body.irep, DUMP_ENDIAN_NAT, &send_request_hdr_irep_, &binsize);
+  }
+  if (mrb_obj_respond_to(mrb, rclass, mrb_intern_cstr(mrb, READ_RESPONSE_HDR_HANDLER))) {
+    registerHook(HOOK_READ_RESPONSE_HEADERS);
+    mrb_sym sym = mrb_intern_cstr(mrb, READ_RESPONSE_HDR_HANDLER);
+    RProc* rproc = mrb_method_search(mrb, rclass, sym);
+    mrb_dump_irep(mrb, rproc->body.irep, DUMP_ENDIAN_NAT, &read_response_hdr_irep_, &binsize);
+  }
+  if (mrb_obj_respond_to(mrb, rclass, mrb_intern_cstr(mrb, SEND_RESPONSE_HDR_HANDLER))) {
+    registerHook(HOOK_SEND_RESPONSE_HEADERS);
+    mrb_sym sym = mrb_intern_cstr(mrb, SEND_RESPONSE_HDR_HANDLER);
+    RProc* rproc = mrb_method_search(mrb, rclass, sym);
+    mrb_dump_irep(mrb, rproc->body.irep, DUMP_ENDIAN_NAT, &send_response_hdr_irep_, &binsize);
+  }
+}
+
+EventSystemPlugin::~EventSystemPlugin() {
+  auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
+  mrb_state* mrb = tlmrb->getMrb();
+
+  if (send_request_hdr_irep_) {
+    mrb_free(mrb, send_request_hdr_irep_);
+    send_request_hdr_irep_ = nullptr;
+  }
+  if (read_response_hdr_irep_) {
+    mrb_free(mrb, read_response_hdr_irep_);
+    read_response_hdr_irep_ = nullptr;
+  }
+  if (send_response_hdr_irep_) {
+    mrb_free(mrb, send_response_hdr_irep_);
+    send_response_hdr_irep_ = nullptr;
+  }
+}
 
 void
 EventSystemPlugin::handleSendRequestHeaders(Transaction& transaction) {
@@ -25,7 +72,7 @@ EventSystemPlugin::handleSendRequestHeaders(Transaction& transaction) {
   context->setTransaction(&transaction);
   context->setStateTag(TransactionStateTag::SEND_REQUEST_HEADERS);
 
-  callHandler_(move(context), SEND_REQUEST_HDR_HANDLER);
+  callHandler_(move(context), send_request_hdr_irep_);
 
   transaction.resume();
 }
@@ -36,7 +83,7 @@ EventSystemPlugin::handleReadResponseHeaders(Transaction& transaction) {
   context->setTransaction(&transaction);
   context->setStateTag(TransactionStateTag::READ_RESPONSE_HEADERS);
 
-  callHandler_(move(context), READ_RESPONSE_HDR_HANDLER);
+  callHandler_(move(context), read_response_hdr_irep_);
 
   transaction.resume();
 }
@@ -47,21 +94,24 @@ EventSystemPlugin::handleSendResponseHeaders(Transaction& transaction) {
   context->setTransaction(&transaction);
   context->setStateTag(TransactionStateTag::SEND_RESPONSE_HEADERS);
 
-  callHandler_(move(context), SEND_RESPONSE_HDR_HANDLER);
+  callHandler_(move(context), send_response_hdr_irep_);
 
   transaction.resume();
 }
 
 mrb_value
-EventSystemPlugin::callHandler_(shared_ptr<TSMrubyContext> context, const string& sym) {
+EventSystemPlugin::callHandler_(shared_ptr<TSMrubyContext> context, const uint8_t* handler_irep) {
   auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
   mrb_state* mrb = tlmrb->getMrb();
   mrb->ud = reinterpret_cast<void *>(context.get());
 
-  // Run mruby script
-  mrb_value rv = mrb_funcall(mrb, handler_obj_->getValue(), sym.c_str(), 0, nullptr);
+  RProc* closure = mrb_closure_new(mrb, mrb_read_irep(mrb, handler_irep));
 
-  return rv;
+  // NOTE Its boxing_no specific
+  mrb_value proc_value;
+  BOXNIX_SET_VALUE(proc_value, MRB_TT_PROC, value.p, (closure));
+
+  return mrb_yield(mrb, proc_value, mrb_nil_value());
 }
 
 static mrb_value ts_mrb_register_es(mrb_state *mrb,

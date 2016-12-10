@@ -13,6 +13,8 @@
 #include <sstream>
 
 #include <mruby/compile.h>
+#include <mruby/dump.h>
+#include <mruby/proc.h>
 #include <mruby/string.h>
 #include <ts/ts.h>
 
@@ -67,7 +69,6 @@ MrubyScriptsCache* getInitializedGlobalScriptCache(const string& filepath) {
 ThreadLocalMRubyStates::ThreadLocalMRubyStates() {
   state_ = mrb_open();
   ts_mrb_class_init(state_);
-  manager_.set_mrb_state(state_);
 }
 
 ThreadLocalMRubyStates::~ThreadLocalMRubyStates() {
@@ -89,9 +90,6 @@ RProc *ThreadLocalMRubyStates::getRProc(const std::string &key) {
     // store to cache
     procCache_.insert(make_pair(key, proc));
   }
-
-  // TODO move to other place?
-  manager_.cleanup_if_needed();
 
   return proc;
 }
@@ -197,13 +195,27 @@ void HeaderRewritePlugin::handleSendResponseHeaders(Transaction &transaction) {
   transaction.resume();
 }
 
+FilterPlugin::~FilterPlugin() {
+  auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
+  mrb_state* mrb = tlmrb->getMrb();
+
+  if (handler_) {
+    mrb_free(mrb, handler_);
+    handler_ = nullptr;
+  }
+}
+
 void FilterPlugin::appendBody(const string &data) {
   transformedBuffer_.append(data);
 }
 
-void FilterPlugin::appendBlock(const mrb_value block) {
+void FilterPlugin::setBlock(const mrb_value block) {
   auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
-  block_ = tlmrb->getManager().lend_mrb_value(block);
+  mrb_state* mrb = tlmrb->getMrb();
+
+  RProc* rproc = mrb_proc_ptr(block);
+  size_t binsize = 0;
+  mrb_dump_irep(mrb, rproc->body.irep, DUMP_ENDIAN_NAT, &handler_, &binsize);
 }
 
 void FilterPlugin::consume(const std::string &data) {
@@ -211,12 +223,18 @@ void FilterPlugin::consume(const std::string &data) {
 }
 
 void FilterPlugin::handleInputComplete() {
-  if (block_.get() != nullptr && !mrb_nil_p(block_->getValue())) {
+  if (handler_ != nullptr) {
     auto* tlmrb = ts_mruby::getThreadLocalMrubyStates();
     mrb_state* mrb = tlmrb->getMrb();
 
+    RProc* closure = mrb_closure_new(mrb, mrb_read_irep(mrb, handler_));
+
+    // NOTE Its boxing_no specific
+    mrb_value proc_value;
+    BOXNIX_SET_VALUE(proc_value, MRB_TT_PROC, value.p, (closure));
+
     mrb_value rv =
-        mrb_yield(mrb, block_->getValue(), mrb_str_new(mrb, origBuffer_.c_str(),
+        mrb_yield(mrb, proc_value, mrb_str_new(mrb, origBuffer_.c_str(),
                                              origBuffer_.length()));
 
     // Convert to_s if the value isn't Ruby string
@@ -231,41 +249,3 @@ void FilterPlugin::handleInputComplete() {
   setOutputComplete();
 }
 
-void LendableMrbValueManager::cleanup_if_needed() {
-  assert(mrb_ != nullptr);
-
-  // TODO double-checked locking? currently simply/unsafe pre-checking
-  if (returnedValues_.size() <= MAX_LENDABLE_VALUES / 2) return;
-
-  // TODO check current thread is owner of value_
-
-  pthread_mutex_lock(&mutex_);
-
-  for_each(returnedValues_.begin(), returnedValues_.end(), [this](mrb_value v) {
-    mrb_gc_unregister(mrb_, v);
-  });
-  returnedValues_.clear();
-
-  pthread_mutex_unlock(&mutex_);
-}
-
-shared_ptr<LentMrbValue>
-LendableMrbValueManager::lend_mrb_value(mrb_value value) {
-  assert(mrb_ != nullptr);
-
-  // Register value to avoid GC
-  mrb_gc_register(mrb_, value);
-
-  // Reserve unregister callback
-  using namespace std::placeholders;
-  auto callback = bind(&LendableMrbValueManager::disposal_callback, this, _1);
-
-  return shared_ptr<LentMrbValue>(new LentMrbValue(value, callback));
-}
-
-void
-LendableMrbValueManager::disposal_callback(mrb_value value) {
-  pthread_mutex_lock(&mutex_);
-  returnedValues_.push_back(value);
-  pthread_mutex_unlock(&mutex_);
-}
