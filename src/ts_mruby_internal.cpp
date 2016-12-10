@@ -228,10 +228,8 @@ void FilterPlugin::handleInputComplete() {
     mrb_state* mrb = tlmrb->getMrb();
 
     RProc* closure = mrb_closure_new(mrb, mrb_read_irep(mrb, handler_));
-
-    // NOTE Its boxing_no specific
     mrb_value proc_value;
-    BOXNIX_SET_VALUE(proc_value, MRB_TT_PROC, value.p, (closure));
+    SET_OBJ_VALUE(proc_value, closure);
 
     mrb_value rv =
         mrb_yield(mrb, proc_value, mrb_str_new(mrb, origBuffer_.c_str(),
