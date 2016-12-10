@@ -228,11 +228,10 @@ void FilterPlugin::handleInputComplete() {
     mrb_state* mrb = tlmrb->getMrb();
 
     RProc* closure = mrb_closure_new(mrb, mrb_read_irep(mrb, handler_));
-    mrb_value proc_value;
-    SET_OBJ_VALUE(proc_value, closure);
+    mrb_value proc = mrb_obj_value(closure);
 
     mrb_value rv =
-        mrb_yield(mrb, proc_value, mrb_str_new(mrb, origBuffer_.c_str(),
+        mrb_yield(mrb, proc, mrb_str_new(mrb, origBuffer_.c_str(),
                                              origBuffer_.length()));
 
     // Convert to_s if the value isn't Ruby string
