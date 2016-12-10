@@ -37,61 +37,6 @@ const static char *TS_MRUBY_PLUGIN_EMAIL = "";
 const int FILTER_RESERVED_BUFFER_SIZE = 1024;
 const int MAX_LENDABLE_VALUES = 128;
 
-/**
- * Represent lent mrb_value from any thread-local mrb_state
- *
- * NOTE I believe it can replace with shared_ptr with custom deleter.
- *
- */
-class LentMrbValue {
-private:
-  using DisposalCallback = std::function<void(mrb_value)>;
-
-  mrb_value value_;
-  DisposalCallback callback_;
-
-public:
-  LentMrbValue(mrb_value value, DisposalCallback cb)
-    : value_(value), callback_(cb) {}
-
-  ~LentMrbValue() { callback_(value_); }
-
-  mrb_value getValue() { return value_; }
-};
-
-/**
- * Object Manager for lendable mrb_value's to any other mrb_state's
- *
- * NOTE: It must ensure release function thread-safe.
- *
- */
-class LendableMrbValueManager {
-private:
-  mrb_state* mrb_;
-  std::vector<mrb_value> returnedValues_;
-
-  // Should is it replaced with TS structure?
-  pthread_mutex_t mutex_;
-
-public:
-  LendableMrbValueManager() 
-    : mrb_(nullptr) {
-    returnedValues_.reserve(MAX_LENDABLE_VALUES);
-    mutex_ = PTHREAD_MUTEX_INITIALIZER;
-  }
-
-  ~LendableMrbValueManager() { pthread_mutex_destroy(&mutex_); }
-
-  void set_mrb_state(mrb_state* mrb) { mrb_ = mrb; }
-
-  // Thread-safe cleanup function
-  void cleanup_if_needed();
-
-  // Generate thread-safe callback to return mrb_value
-  std::shared_ptr<LentMrbValue> lend_mrb_value(mrb_value value);
-  void disposal_callback(mrb_value value);
-};
-
 namespace ts_mruby {
 
 /*
@@ -104,12 +49,10 @@ public:
 
   mrb_state *getMrb() { return state_; }
   RProc *getRProc(const std::string &key);
-  LendableMrbValueManager& getManager() { return manager_; }
 
 private:
   mrb_state *state_;
   std::map<std::string, RProc *> procCache_;
-  LendableMrbValueManager manager_;
 };
 
 /*
@@ -231,7 +174,7 @@ class FilterPlugin : public atscppapi::TransformationPlugin {
 private:
   std::string origBuffer_;
   std::string transformedBuffer_;
-  std::shared_ptr<LentMrbValue> block_;
+  uint8_t* handler_ = nullptr;
 
 public:
   FilterPlugin(atscppapi::Transaction &transaction)
@@ -241,9 +184,10 @@ public:
     origBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
     transformedBuffer_.reserve(FILTER_RESERVED_BUFFER_SIZE);
   }
+  ~FilterPlugin();
 
   void appendBody(const std::string &data);
-  void appendBlock(const mrb_value block);
+  void setBlock(const mrb_value);
 
   void consume(const std::string &data);
   void handleInputComplete();

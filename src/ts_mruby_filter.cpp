@@ -52,7 +52,7 @@ static mrb_value ts_mrb_transform_filter_body_bang(mrb_state *mrb,
 
   if (!mrb_nil_p(block) && mrb_type(block) == MRB_TT_PROC) {
     auto *context = reinterpret_cast<TSMrubyContext *>(mrb->ud);
-    get_filter_plugin(context)->appendBlock(block);
+    get_filter_plugin(context)->setBlock(block);
   }
 
   return self;
