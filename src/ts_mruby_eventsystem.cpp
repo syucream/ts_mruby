@@ -106,12 +106,9 @@ EventSystemPlugin::callHandler_(shared_ptr<TSMrubyContext> context, const uint8_
   mrb->ud = reinterpret_cast<void *>(context.get());
 
   RProc* closure = mrb_closure_new(mrb, mrb_read_irep(mrb, handler_irep));
+  mrb_value proc = mrb_obj_value(closure);
 
-  // NOTE Its boxing_no specific
-  mrb_value proc_value;
-  BOXNIX_SET_VALUE(proc_value, MRB_TT_PROC, value.p, (closure));
-
-  return mrb_yield(mrb, proc_value, mrb_nil_value());
+  return mrb_yield(mrb, proc, mrb_nil_value());
 }
 
 static mrb_value ts_mrb_register_es(mrb_state *mrb,
